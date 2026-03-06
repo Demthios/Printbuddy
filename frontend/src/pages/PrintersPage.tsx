@@ -3579,7 +3579,7 @@ function PrinterCard({
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {/* Chamber Light Toggle */}
-              <Button
+              {printer.printer_type !== 'klipper' && <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => chamberLightMutation.mutate(!status?.chamber_light)}
@@ -3588,7 +3588,7 @@ function PrinterCard({
                 className={status?.chamber_light ? 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30' : ''}
               >
                 <ChamberLight on={status?.chamber_light ?? false} className="w-4 h-4" />
-              </Button>
+              </Button>}
               {/* Camera Button */}
               <Button
                 variant="secondary"
@@ -3615,8 +3615,8 @@ function PrinterCard({
               >
                 <Video className="w-4 h-4" />
               </Button>
-              {/* Split button: main part toggles detection, chevron opens modal */}
-              <div className={`inline-flex rounded-md ${printer.plate_detection_enabled ? 'ring-1 ring-green-500' : ''}`}>
+             {/* Split button: main part toggles detection, chevron opens modal */}
+              {printer.printer_type !== 'klipper' && <div className={`inline-flex rounded-md ${printer.plate_detection_enabled ? 'ring-1 ring-green-500' : ''}`}>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -3645,7 +3645,7 @@ function PrinterCard({
                     <ChevronDown className="w-3 h-3" />
                   )}
                 </Button>
-              </div>
+              </div>}
               <Button
                 variant="secondary"
                 size="sm"

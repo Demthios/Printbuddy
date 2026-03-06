@@ -382,7 +382,29 @@ async def camera_stream(
     import uuid
 
     printer = await get_printer_or_404(printer_id, db)
-
+    # Klipper printers use klipper_camera_url as their stream source
+    if getattr(printer, 'printer_type', 'bambu') == 'klipper' and getattr(printer, 'klipper_camera_url', None):
+        import time
+        from backend.app.services.external_camera import generate_mjpeg_stream
+        fps = min(max(fps, 1), 15)
+        logger.info("Using Klipper camera for printer %s at %s fps", printer_id, fps)
+        _stream_start_times[printer_id] = time.time()
+        _active_external_streams.add(printer_id)
+        async def klipper_stream_wrapper():
+            try:
+                async for frame in generate_mjpeg_stream(
+                    printer.klipper_camera_url, "mjpeg", fps
+                ):
+                    import time as _time
+                    _last_frames[printer_id] = frame
+                    _last_frame_times[printer_id] = _time.time()
+                    yield frame
+            finally:
+                _active_external_streams.discard(printer_id)
+        return StreamingResponse(
+            klipper_stream_wrapper(),
+            media_type="multipart/x-mixed-replace; boundary=frame",
+        )
     # Check for external camera first
     if printer.external_camera_enabled and printer.external_camera_url:
         import time

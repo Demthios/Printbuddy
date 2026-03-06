@@ -101,6 +101,10 @@ export interface Printer {
   external_camera_enabled: boolean;
   plate_detection_enabled: boolean;  // Check plate before print
   plate_detection_roi?: PlateDetectionROI;  // ROI for plate detection
+  printer_type: string;  // "bambu" or "klipper"
+  moonraker_host: string | null;
+  moonraker_port: number | null;
+  klipper_camera_url: string | null;
   created_at: string;
   updated_at: string;
 }
