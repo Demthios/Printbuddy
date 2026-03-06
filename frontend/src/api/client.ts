@@ -2288,6 +2288,24 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  testKlipperConnection: (data: { host: string; port?: number; api_key?: string }) =>
+    request<{ success: boolean; klippy_state: string | null; moonraker_version: string | null; message: string }>('/klipper/test-connection', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  createKlipperPrinter: (data: {
+    name: string;
+    host: string;
+    port?: number;
+    api_key?: string;
+    camera_url?: string;
+    upload_subfolder?: string;
+    location?: string;
+  }) =>
+    request<{ printer_id: number; name: string; status: string }>('/klipper/printers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),  
   updatePrinter: (id: number, data: Partial<PrinterCreate>) =>
     request<Printer>(`/printers/${id}`, {
       method: 'PATCH',

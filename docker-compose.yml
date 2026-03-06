@@ -46,6 +46,16 @@ services:
       #- VIRTUAL_PRINTER_PASV_ADDRESS=
     restart: unless-stopped
 
+  tunnel:
+    container_name: cloudflared-tunnel 
+    image: cloudflare/cloudflared:latest 
+    restart: unless-stopped 
+    command: tunnel run 
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiMzFiYmFlOGI3NDhkNWY3YTE2YmRlZDNiMWQ0ZTk4NzAiLCJ0IjoiZjA4YzYzMjItYjRlOC00N2I0LWI0OWEtNmJmYjU2NTE4ZDQ1IiwicyI6IlpESTVOR1ZqTnpVdFlqYzNZUzAwTkRJeExXSm1ZakV0WlRaalptWXpaR1ZrWXpReCJ9
+
+
+
 volumes:
   bambuddy_data:
   bambuddy_logs:

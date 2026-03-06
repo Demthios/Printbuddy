@@ -340,7 +340,33 @@ async def get_printer_status(
             name=printer.name,
             connected=False,
         )
-
+    # Klipper printers — map KlipperState to the minimal fields the frontend needs
+    if printer_manager.is_klipper(printer_id):
+        from backend.app.core.printer_base import PrinterStatus as KlipperPrinterStatus
+        is_connected = state.status != KlipperPrinterStatus.OFFLINE
+        klipper_state_map = {
+            KlipperPrinterStatus.IDLE: "IDLE",
+            KlipperPrinterStatus.PRINTING: "RUNNING",
+            KlipperPrinterStatus.PAUSED: "PAUSE",
+            KlipperPrinterStatus.ERROR: "ERROR",
+            KlipperPrinterStatus.OFFLINE: None,
+        }
+        return PrinterStatus(
+            id=printer_id,
+            name=printer.name,
+            connected=is_connected,
+            state=klipper_state_map.get(state.status),
+            progress=state.progress.percent if state.progress else None,
+            remaining_time=state.progress.remaining_seconds // 60 if state.progress and state.progress.remaining_seconds else None,
+            current_print=state.progress.filename if state.progress else None,
+            temperatures={
+                "nozzle": state.hotend.actual if state.hotend else 0,
+                "nozzle_target": state.hotend.target if state.hotend else 0,
+                "bed": state.bed.actual if state.bed else 0,
+                "bed_target": state.bed.target if state.bed else 0,
+            },
+        )
+    
     # Determine cover URL if there's an active print (including paused)
     cover_url = None
     if state.state in ("RUNNING", "PAUSE") and state.gcode_file:

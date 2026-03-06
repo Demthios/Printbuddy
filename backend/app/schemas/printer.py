@@ -5,19 +5,32 @@ from pydantic import BaseModel, Field
 
 class PrinterBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    serial_number: str = Field(..., min_length=1, max_length=50)
-    ip_address: str = Field(
-        ...,
-        max_length=253,
-        pattern=r"^(\d{1,3}(\.\d{1,3}){3}|[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)$",
-    )
-    access_code: str = Field(..., min_length=1, max_length=20)
+    serial_number: str = Field(default="", max_length=50)
+    ip_address: str = Field(default="", max_length=253)
+    access_code: str = Field(default="", max_length=20)
     model: str | None = None
-    location: str | None = None  # Group/location name
+    location: str | None = None
     auto_archive: bool = True
     external_camera_url: str | None = None
-    external_camera_type: str | None = None  # "mjpeg", "rtsp", "snapshot", "usb"
+    external_camera_type: str | None = None
     external_camera_enabled: bool = False
+    printer_type: str = "bambu"
+    moonraker_host: str | None = None
+    moonraker_port: int | None = None
+    klipper_camera_url: str | None = None
+
+    def model_post_init(self, __context) -> None:
+        """Validate required fields based on printer type."""
+        if self.printer_type == "bambu":
+            if not self.serial_number:
+                raise ValueError("serial_number is required for Bambu printers")
+            if not self.ip_address:
+                raise ValueError("ip_address is required for Bambu printers")
+            if not self.access_code:
+                raise ValueError("access_code is required for Bambu printers")
+        elif self.printer_type == "klipper":
+            if not self.moonraker_host:
+                raise ValueError("moonraker_host is required for Klipper printers")
 
 
 class PrinterCreate(PrinterBase):
@@ -56,11 +69,8 @@ class PrinterUpdate(BaseModel):
 class PrinterResponse(PrinterBase):
     id: int
     is_active: bool
-    nozzle_count: int = 1  # 1 or 2, auto-detected from MQTT
+    nozzle_count: int = 1
     print_hours_offset: float = 0.0
-    external_camera_url: str | None = None
-    external_camera_type: str | None = None
-    external_camera_enabled: bool = False
     plate_detection_enabled: bool = False
     plate_detection_roi: PlateDetectionROI | None = None
     created_at: datetime
@@ -90,7 +100,12 @@ class PrinterResponse(PrinterBase):
             "plate_detection_enabled": printer.plate_detection_enabled,
             "created_at": printer.created_at,
             "updated_at": printer.updated_at,
+            "printer_type": getattr(printer, "printer_type", "bambu"),
+            "moonraker_host": getattr(printer, "moonraker_host", None),
+            "moonraker_port": getattr(printer, "moonraker_port", None),
+            "klipper_camera_url": getattr(printer, "klipper_camera_url", None),
         }
+
         # Build ROI object if any ROI field is set
         if any(
             [

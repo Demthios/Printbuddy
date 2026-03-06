@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.printer import Printer
 from backend.app.services.bambu_mqtt import BambuMQTTClient, MQTTLogEntry, PrinterState, get_stage_name
+from backend.app.core.klipper.printer import KlipperPrinter
+from backend.app.core.printer_base import PrinterState as KlipperPrinterState
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +97,7 @@ class PrinterManager:
 
     def __init__(self):
         self._clients: dict[int, BambuMQTTClient] = {}
+        self._klipper_clients: dict[int, KlipperPrinter] = {}  # Klipper adapter instances
         self._models: dict[int, str | None] = {}  # Cache printer models for feature detection
         self._printer_info: dict[int, PrinterInfo] = {}  # Cache printer name/serial for callbacks
         self._on_print_start: Callable[[int, dict], None] | None = None
@@ -187,6 +190,15 @@ class PrinterManager:
 
         printer_id = printer.id
 
+        # ---------------------------------------------------------------
+        # Klipper/Moonraker branch
+        # ---------------------------------------------------------------
+        if getattr(printer, "printer_type", "bambu") == "klipper":
+            return await self._connect_klipper_printer(printer)
+
+        # ---------------------------------------------------------------
+        # Existing Bambu branch (unchanged)
+        # ---------------------------------------------------------------
         def on_state_change(state: PrinterState):
             if self._on_status_change:
                 self._schedule_async(self._on_status_change(printer_id, state))
@@ -228,24 +240,79 @@ class PrinterManager:
         await asyncio.sleep(1)
         return client.state.connected
 
+    async def _connect_klipper_printer(self, printer: Printer) -> bool:
+        """Connect to a Klipper/Moonraker printer.
+
+        This mirrors connect_printer() but uses KlipperPrinter instead of
+        BambuMQTTClient.  Klipper state is stored in _klipper_clients so the
+        rest of the existing Bambu logic never accidentally touches it.
+        """
+        printer_id = printer.id
+
+        def on_state_change(klipper_state: KlipperPrinterState):
+            # Re-use the existing status-change callback so the WebSocket
+            # broadcaster and queue scheduler both see Klipper state updates.
+            # We wrap KlipperPrinterState into a minimal duck-typed object that
+            # the rest of main.py can consume without changes.
+            if self._on_status_change:
+                self._schedule_async(
+                    self._on_status_change(printer_id, klipper_state)
+                )
+
+        klipper = KlipperPrinter(
+            printer_id=str(printer_id),
+            name=printer.name,
+            host=printer.moonraker_host,
+            port=printer.moonraker_port or 7125,
+            api_key=printer.moonraker_api_key or None,
+            camera_url=printer.klipper_camera_url or None,
+            upload_subfolder=printer.klipper_upload_subfolder or "printbuddy",
+            on_state_change=on_state_change,
+        )
+
+        await klipper.connect()
+        self._klipper_clients[printer_id] = klipper
+        self._models[printer_id] = "klipper"
+        self._printer_info[printer_id] = PrinterInfo(printer.name, f"klipper-{printer_id}")
+
+        # Give the WebSocket connection a moment to establish
+        await asyncio.sleep(1)
+        return klipper.is_connected
+
+    def get_klipper_client(self, printer_id: int) -> KlipperPrinter | None:
+        """Return the KlipperPrinter adapter for a given printer ID, or None."""
+        return self._klipper_clients.get(printer_id)
+
+    def is_klipper(self, printer_id: int) -> bool:
+        """Return True if this printer ID belongs to a Klipper printer."""
+        return printer_id in self._klipper_clients
+
     def disconnect_printer(self, printer_id: int, timeout: float = 0):
         """Disconnect from a printer."""
+        # Klipper printer
+        if printer_id in self._klipper_clients:
+            asyncio.create_task(self._klipper_clients[printer_id].disconnect())
+            del self._klipper_clients[printer_id]
+        # Bambu printer
         if printer_id in self._clients:
             self._clients[printer_id].disconnect(timeout=timeout)
             del self._clients[printer_id]
-        self._models.pop(printer_id, None)  # Clean up model cache
-        self._printer_info.pop(printer_id, None)  # Clean up printer info cache
+        self._models.pop(printer_id, None)
+        self._printer_info.pop(printer_id, None)
 
     def disconnect_all(self, timeout: float = 0):
         """Disconnect from all printers."""
         for printer_id in list(self._clients.keys()):
             self.disconnect_printer(printer_id, timeout=timeout)
 
-    def get_status(self, printer_id: int) -> PrinterState | None:
+    def get_status(self, printer_id: int) -> PrinterState | KlipperPrinterState | None:
         """Get the current status of a printer (checks for stale connections)."""
+        # Klipper printer — return its unified state directly
+        if printer_id in self._klipper_clients:
+            return self._klipper_clients[printer_id].get_state()
+        # Bambu printer
         if printer_id in self._clients:
             client = self._clients[printer_id]
-            # Check staleness and update connected state if needed
             client.check_staleness()
             return client.state
         return None
@@ -265,9 +332,10 @@ class PrinterManager:
 
     def is_connected(self, printer_id: int) -> bool:
         """Check if a printer is connected (checks for stale connections)."""
+        if printer_id in self._klipper_clients:
+            return self._klipper_clients[printer_id].is_connected
         if printer_id in self._clients:
             client = self._clients[printer_id]
-            # Check staleness and update connected state if needed
             return client.check_staleness()
         return False
 

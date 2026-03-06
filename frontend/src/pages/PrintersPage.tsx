@@ -4136,6 +4136,13 @@ function AddPrinterModal({
   existingSerials: string[];
 }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  // Printer type toggle
+  const [printerType, setPrinterType] = useState<'bambu' | 'klipper'>('bambu');
+
+  // Bambu form state
   const [form, setForm] = useState<PrinterCreate>({
     name: '',
     serial_number: '',
@@ -4146,7 +4153,22 @@ function AddPrinterModal({
     auto_archive: true,
   });
 
-  // Discovery state
+  // Klipper form state
+  const [klipperForm, setKlipperForm] = useState({
+    name: '',
+    host: '',
+    port: 7125,
+    api_key: '',
+    camera_url: '',
+    upload_subfolder: 'printbuddy',
+    location: '',
+  });
+
+  // Klipper connection test state
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Discovery state (Bambu only)
   const [discovering, setDiscovering] = useState(false);
   const [discovered, setDiscovered] = useState<DiscoveredPrinter[]>([]);
   const [discoveryError, setDiscoveryError] = useState('');
@@ -4156,6 +4178,46 @@ function AddPrinterModal({
   const [subnet, setSubnet] = useState('');
   const [scanProgress, setScanProgress] = useState({ scanned: 0, total: 0 });
 
+  // Klipper add mutation
+  const klipperMutation = useMutation({
+    mutationFn: () =>
+      api.createKlipperPrinter({
+        name: klipperForm.name.trim() || 'Klipper Printer',
+        host: klipperForm.host.trim(),
+        port: klipperForm.port || 7125,
+        api_key: klipperForm.api_key.trim() || undefined,
+        camera_url: klipperForm.camera_url.trim() || undefined,
+        upload_subfolder: klipperForm.upload_subfolder.trim() || 'printbuddy',
+        location: klipperForm.location.trim() || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['printers'] });
+      showToast('Klipper printer added successfully');
+      onClose();
+    },
+    onError: (error: Error) => {
+      showToast(error.message || 'Failed to add Klipper printer', 'error');
+    },
+  });
+
+  const testKlipperConnection = async () => {
+    if (!klipperForm.host.trim()) return;
+    setTestingConnection(true);
+    setConnectionResult(null);
+    try {
+      const result = await api.testKlipperConnection({
+        host: klipperForm.host.trim(),
+        port: klipperForm.port || 7125,
+        api_key: klipperForm.api_key.trim() || undefined,
+      });
+      setConnectionResult({ success: result.success, message: result.message });
+    } catch (e) {
+      setConnectionResult({ success: false, message: e instanceof Error ? e.message : 'Connection failed' });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   // Fetch discovery info on mount
   useEffect(() => {
     discoveryApi.getInfo().then(info => {
@@ -4164,12 +4226,9 @@ function AddPrinterModal({
         setDetectedSubnets(info.subnets);
         setSubnet(info.subnets[0]);
       }
-    }).catch(() => {
-      // Ignore errors, assume not Docker
-    });
+    }).catch(() => {});
   }, []);
 
-  // Filter out already-added printers
   const newPrinters = discovered.filter(p => !existingSerials.includes(p.serial));
 
   const startDiscovery = async () => {
@@ -4181,18 +4240,13 @@ function AddPrinterModal({
 
     try {
       if (isDocker) {
-        // Use subnet scanning for Docker
         await discoveryApi.startSubnetScan(subnet);
-
-        // Poll for scan status and results
         const pollInterval = setInterval(async () => {
           try {
             const status = await discoveryApi.getScanStatus();
             setScanProgress({ scanned: status.scanned, total: status.total });
-
             const printers = await discoveryApi.getDiscoveredPrinters();
             setDiscovered(printers);
-
             if (!status.running) {
               clearInterval(pollInterval);
               setDiscovering(false);
@@ -4203,10 +4257,7 @@ function AddPrinterModal({
           }
         }, 500);
       } else {
-        // Use SSDP discovery for native installs
         await discoveryApi.startDiscovery(10);
-
-        // Poll for discovered printers every second
         const pollInterval = setInterval(async () => {
           try {
             const printers = await discoveryApi.getDiscoveredPrinters();
@@ -4215,18 +4266,11 @@ function AddPrinterModal({
             console.error('Failed to get discovered printers:', e);
           }
         }, 1000);
-
-        // Stop after 10 seconds
         setTimeout(async () => {
           clearInterval(pollInterval);
-          try {
-            await discoveryApi.stopDiscovery();
-          } catch {
-            // Ignore stop errors
-          }
+          try { await discoveryApi.stopDiscovery(); } catch {}
           setDiscovering(false);
           setHasScanned(true);
-          // Final fetch
           try {
             const printers = await discoveryApi.getDiscoveredPrinters();
             setDiscovered(printers);
@@ -4243,23 +4287,12 @@ function AddPrinterModal({
     }
   };
 
-  // Reuse module-level mapModelCode
-
   const selectPrinter = (printer: DiscoveredPrinter) => {
-    // Don't pre-fill serial if it's a placeholder (unknown-*) - user needs to enter actual serial
     const serialNumber = printer.serial.startsWith('unknown-') ? '' : printer.serial;
-    setForm({
-      ...form,
-      name: printer.name || '',
-      serial_number: serialNumber,
-      ip_address: printer.ip_address,
-      model: mapModelCode(printer.model),
-    });
-    // Clear discovery results after selection
+    setForm({ ...form, name: printer.name || '', serial_number: serialNumber, ip_address: printer.ip_address, model: mapModelCode(printer.model) });
     setDiscovered([]);
   };
 
-  // Cleanup discovery on unmount
   useEffect(() => {
     return () => {
       discoveryApi.stopDiscovery().catch(() => {});
@@ -4267,11 +4300,8 @@ function AddPrinterModal({
     };
   }, []);
 
-  // Close on Escape key
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
@@ -4281,227 +4311,262 @@ function AddPrinterModal({
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onClick={onClose}
     >
-      <Card className="w-full max-w-md" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <CardContent>
           <h2 className="text-xl font-semibold mb-4">{t('printers.addPrinter')}</h2>
 
-          {/* Discovery Section */}
-          <div className="mb-4 pb-4 border-b border-bambu-dark-tertiary">
-            {isDocker && (
-              <div className="mb-3">
-                <label className="block text-sm text-bambu-gray mb-1">
-                  {t('printers.discovery.subnetToScan')}
-                </label>
-                {detectedSubnets.length > 0 ? (
-                  <select
-                    className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none text-sm"
-                    value={subnet}
-                    onChange={(e) => setSubnet(e.target.value)}
-                    disabled={discovering}
-                  >
-                    {detectedSubnets.map(s => (
-                      <option key={s} value={s}>{s}</option>
+          {/* Printer type toggle */}
+          <div className="flex rounded-lg border border-bambu-dark-tertiary overflow-hidden mb-5">
+            <button
+              onClick={() => setPrinterType('bambu')}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                printerType === 'bambu'
+                  ? 'bg-bambu-green text-white'
+                  : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-secondary'
+              }`}
+            >
+              Bambu Lab
+            </button>
+            <button
+              onClick={() => setPrinterType('klipper')}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                printerType === 'klipper'
+                  ? 'bg-bambu-green text-white'
+                  : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-secondary'
+              }`}
+            >
+              Klipper / Moonraker
+            </button>
+          </div>
+
+          {printerType === 'bambu' ? (
+            <>
+              {/* Discovery Section */}
+              <div className="mb-4 pb-4 border-b border-bambu-dark-tertiary">
+                {isDocker && (
+                  <div className="mb-3">
+                    <label className="block text-sm text-bambu-gray mb-1">
+                      {t('printers.discovery.subnetToScan')}
+                    </label>
+                    {detectedSubnets.length > 0 ? (
+                      <select
+                        className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none text-sm"
+                        value={subnet}
+                        onChange={(e) => setSubnet(e.target.value)}
+                        disabled={discovering}
+                      >
+                        {detectedSubnets.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none text-sm"
+                        value={subnet}
+                        onChange={(e) => setSubnet(e.target.value)}
+                        placeholder="192.168.1.0/24"
+                        disabled={discovering}
+                      />
+                    )}
+                    <p className="mt-1 text-xs text-bambu-gray">{t('printers.discovery.dockerNote')}</p>
+                  </div>
+                )}
+
+                <Button type="button" variant="secondary" onClick={startDiscovery} disabled={discovering} className="w-full">
+                  {discovering ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />{isDocker && scanProgress.total > 0 ? t('printers.discovery.scanProgress', { scanned: scanProgress.scanned, total: scanProgress.total }) : t('printers.discovery.scanning')}</>
+                  ) : (
+                    <><Search className="w-4 h-4" />{isDocker ? t('printers.discovery.scanSubnet') : t('printers.discovery.discoverNetwork')}</>
+                  )}
+                </Button>
+
+                {discoveryError && <div className="mt-2 text-sm text-red-400">{discoveryError}</div>}
+
+                {newPrinters.length > 0 && (
+                  <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                    {newPrinters.map((printer) => (
+                      <div key={printer.serial} className="flex items-center justify-between p-2 bg-bambu-dark rounded-lg hover:bg-bambu-dark-secondary cursor-pointer transition-colors" onClick={() => selectPrinter(printer)}>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-white text-sm truncate">{printer.name || printer.serial}</p>
+                          <p className="text-xs text-bambu-gray truncate">
+                            {mapModelCode(printer.model) || t('printers.discovery.unknown')} • {printer.ip_address}
+                            {printer.serial.startsWith('unknown-') && <span className="text-yellow-500"> • {t('printers.discovery.serialRequired')}</span>}
+                          </p>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-bambu-gray -rotate-90 flex-shrink-0 ml-2" />
+                      </div>
                     ))}
+                  </div>
+                )}
+
+                {discovering && <p className="mt-2 text-sm text-bambu-gray text-center">{isDocker ? t('printers.discovery.scanningSubnet') : t('printers.discovery.scanningNetwork')}</p>}
+                {hasScanned && !discovering && discovered.length === 0 && <p className="mt-2 text-sm text-bambu-gray text-center">{isDocker ? t('printers.discovery.noPrintersFoundSubnet') : t('printers.discovery.noPrintersFoundNetwork')}</p>}
+                {hasScanned && !discovering && discovered.length > 0 && newPrinters.length === 0 && <p className="mt-2 text-sm text-bambu-gray text-center">{t('printers.discovery.allConfigured')}</p>}
+              </div>
+
+              <form onSubmit={(e) => { e.preventDefault(); onAdd(form); }} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-bambu-gray mb-1">{t('printers.name')}</label>
+                  <input type="text" required className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('printers.modal.myPrinter')} />
+                </div>
+                <div>
+                  <label className="block text-sm text-bambu-gray mb-1">{t('printers.ipAddress')}</label>
+                  <input type="text" required pattern="(\d{1,3}(\.\d{1,3}){3}|[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)" className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none" value={form.ip_address} onChange={(e) => setForm({ ...form, ip_address: e.target.value })} placeholder="192.168.1.100 or printer.local" />
+                </div>
+                <div>
+                  <label className="block text-sm text-bambu-gray mb-1">{t('printers.serialNumber')}</label>
+                  <input type="text" required className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none" value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} placeholder="01P00A000000000" />
+                </div>
+                <div>
+                  <label className="block text-sm text-bambu-gray mb-1">{t('printers.accessCode')}</label>
+                  <input type="password" required className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none" value={form.access_code} onChange={(e) => setForm({ ...form, access_code: e.target.value })} placeholder={t('printers.modal.fromPrinterSettings')} />
+                </div>
+                <div>
+                  <label className="block text-sm text-bambu-gray mb-1">{t('printers.modal.modelOptional')}</label>
+                  <select className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none" value={form.model || ''} onChange={(e) => setForm({ ...form, model: e.target.value })}>
+                    <option value="">{t('printers.modal.selectModel')}</option>
+                    <optgroup label="H2 Series">
+                      <option value="H2C">H2C</option>
+                      <option value="H2D">H2D</option>
+                      <option value="H2D Pro">H2D Pro</option>
+                      <option value="H2S">H2S</option>
+                    </optgroup>
+                    <optgroup label="X1 Series">
+                      <option value="X1E">X1E</option>
+                      <option value="X1C">X1 Carbon</option>
+                      <option value="X1">X1</option>
+                    </optgroup>
+                    <optgroup label="P Series">
+                      <option value="P2S">P2S</option>
+                      <option value="P1S">P1S</option>
+                      <option value="P1P">P1P</option>
+                    </optgroup>
+                    <optgroup label="A1 Series">
+                      <option value="A1">A1</option>
+                      <option value="A1 Mini">A1 Mini</option>
+                    </optgroup>
                   </select>
-                ) : (
+                </div>
+                <div>
+                  <label className="block text-sm text-bambu-gray mb-1">{t('printers.modal.locationGroup')}</label>
+                  <input type="text" className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none" value={form.location || ''} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t('printers.modal.locationPlaceholder')} />
+                  <p className="text-xs text-bambu-gray mt-1">{t('printers.locationHelp')}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="auto_archive" checked={form.auto_archive} onChange={(e) => setForm({ ...form, auto_archive: e.target.checked })} className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green" />
+                  <label htmlFor="auto_archive" className="text-sm text-bambu-gray">{t('printers.modal.autoArchiveLabel')}</label>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button type="button" variant="secondary" onClick={onClose} className="flex-1">{t('common.cancel')}</Button>
+                  <Button type="submit" className="flex-1">{t('printers.addPrinter')}</Button>
+                </div>
+              </form>
+            </>
+          ) : (
+            /* Klipper form */
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-bambu-gray mb-1">Printer Name</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+                  value={klipperForm.name}
+                  onChange={(e) => setKlipperForm({ ...klipperForm, name: e.target.value })}
+                  placeholder="Voron 2.4"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm text-bambu-gray mb-1">Moonraker Host</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none text-sm"
-                    value={subnet}
-                    onChange={(e) => setSubnet(e.target.value)}
-                    placeholder="192.168.1.0/24"
-                    disabled={discovering}
+                    className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+                    value={klipperForm.host}
+                    onChange={(e) => { setKlipperForm({ ...klipperForm, host: e.target.value }); setConnectionResult(null); }}
+                    placeholder="192.168.1.50"
                   />
-                )}
-                <p className="mt-1 text-xs text-bambu-gray">
-                  {t('printers.discovery.dockerNote')}
-                </p>
+                </div>
+                <div className="w-24">
+                  <label className="block text-sm text-bambu-gray mb-1">Port</label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+                    value={klipperForm.port}
+                    onChange={(e) => setKlipperForm({ ...klipperForm, port: parseInt(e.target.value) || 7125 })}
+                  />
+                </div>
               </div>
-            )}
 
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={startDiscovery}
-              disabled={discovering}
-              className="w-full"
-            >
-              {discovering ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isDocker && scanProgress.total > 0
-                    ? t('printers.discovery.scanProgress', { scanned: scanProgress.scanned, total: scanProgress.total })
-                    : t('printers.discovery.scanning')}
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4" />
-                  {isDocker ? t('printers.discovery.scanSubnet') : t('printers.discovery.discoverNetwork')}
-                </>
-              )}
-            </Button>
-
-            {discoveryError && (
-              <div className="mt-2 text-sm text-red-400">{discoveryError}</div>
-            )}
-
-            {newPrinters.length > 0 && (
-              <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
-                {newPrinters.map((printer) => (
-                  <div
-                    key={printer.serial}
-                    className="flex items-center justify-between p-2 bg-bambu-dark rounded-lg hover:bg-bambu-dark-secondary cursor-pointer transition-colors"
-                    onClick={() => selectPrinter(printer)}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-white text-sm truncate">
-                        {printer.name || printer.serial}
-                      </p>
-                      <p className="text-xs text-bambu-gray truncate">
-                        {mapModelCode(printer.model) || t('printers.discovery.unknown')} • {printer.ip_address}
-                        {printer.serial.startsWith('unknown-') && (
-                          <span className="text-yellow-500"> • {t('printers.discovery.serialRequired')}</span>
-                        )}
-                      </p>
-                    </div>
-                    <ChevronDown className="w-4 h-4 text-bambu-gray -rotate-90 flex-shrink-0 ml-2" />
+              {/* Test connection button + result */}
+              <div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={testKlipperConnection}
+                  disabled={testingConnection || !klipperForm.host.trim()}
+                  className="w-full"
+                >
+                  {testingConnection ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Testing connection...</>
+                  ) : (
+                    <><Signal className="w-4 h-4" />Test Connection</>
+                  )}
+                </Button>
+                {connectionResult && (
+                  <div className={`mt-2 flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${connectionResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    {connectionResult.success ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <XCircle className="w-4 h-4 flex-shrink-0" />}
+                    {connectionResult.message}
                   </div>
-                ))}
+                )}
               </div>
-            )}
 
-            {discovering && (
-              <p className="mt-2 text-sm text-bambu-gray text-center">
-                {isDocker ? t('printers.discovery.scanningSubnet') : t('printers.discovery.scanningNetwork')}
-              </p>
-            )}
+              <div>
+                <label className="block text-sm text-bambu-gray mb-1">API Key <span className="text-xs">(optional — most installs don't need this)</span></label>
+                <input
+                  type="password"
+                  className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+                  value={klipperForm.api_key}
+                  onChange={(e) => setKlipperForm({ ...klipperForm, api_key: e.target.value })}
+                  placeholder="Leave blank if auth is disabled"
+                />
+              </div>
 
-            {hasScanned && !discovering && discovered.length === 0 && (
-              <p className="mt-2 text-sm text-bambu-gray text-center">
-                {isDocker ? t('printers.discovery.noPrintersFoundSubnet') : t('printers.discovery.noPrintersFoundNetwork')}
-              </p>
-            )}
+              <div>
+                <label className="block text-sm text-bambu-gray mb-1">Camera URL <span className="text-xs">(optional)</span></label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+                  value={klipperForm.camera_url}
+                  onChange={(e) => setKlipperForm({ ...klipperForm, camera_url: e.target.value })}
+                  placeholder="http://192.168.1.50:8080/?action=stream"
+                />
+              </div>
 
-            {hasScanned && !discovering && discovered.length > 0 && newPrinters.length === 0 && (
-              <p className="mt-2 text-sm text-bambu-gray text-center">
-                {t('printers.discovery.allConfigured')}
-              </p>
-            )}
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onAdd(form);
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <label className="block text-sm text-bambu-gray mb-1">{t('printers.name')}</label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder={t('printers.modal.myPrinter')}
-              />
+              <div>
+                <label className="block text-sm text-bambu-gray mb-1">Location / Group <span className="text-xs">(optional)</span></label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+                  value={klipperForm.location}
+                  onChange={(e) => setKlipperForm({ ...klipperForm, location: e.target.value })}
+                  placeholder={t('printers.modal.locationPlaceholder')}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="secondary" onClick={onClose} className="flex-1">{t('common.cancel')}</Button>
+                <Button
+                  type="button"
+                  onClick={() => klipperMutation.mutate()}
+                  className="flex-1"
+                  disabled={klipperMutation.isPending || !klipperForm.host.trim()}
+                >
+                  {klipperMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Klipper Printer'}
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm text-bambu-gray mb-1">{t('printers.ipAddress')}</label>
-              <input
-                type="text"
-                required
-                pattern="(\d{1,3}(\.\d{1,3}){3}|[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*)"
-                className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
-                value={form.ip_address}
-                onChange={(e) => setForm({ ...form, ip_address: e.target.value })}
-                placeholder="192.168.1.100 or printer.local"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-bambu-gray mb-1">{t('printers.serialNumber')}</label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
-                value={form.serial_number}
-                onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
-                placeholder="01P00A000000000"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-bambu-gray mb-1">{t('printers.accessCode')}</label>
-              <input
-                type="password"
-                required
-                className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
-                value={form.access_code}
-                onChange={(e) => setForm({ ...form, access_code: e.target.value })}
-                placeholder={t('printers.modal.fromPrinterSettings')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-bambu-gray mb-1">{t('printers.modal.modelOptional')}</label>
-              <select
-                className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
-                value={form.model || ''}
-                onChange={(e) => setForm({ ...form, model: e.target.value })}
-              >
-                <option value="">{t('printers.modal.selectModel')}</option>
-                <optgroup label="H2 Series">
-                  <option value="H2C">H2C</option>
-                  <option value="H2D">H2D</option>
-                  <option value="H2D Pro">H2D Pro</option>
-                  <option value="H2S">H2S</option>
-                </optgroup>
-                <optgroup label="X1 Series">
-                  <option value="X1E">X1E</option>
-                  <option value="X1C">X1 Carbon</option>
-                  <option value="X1">X1</option>
-                </optgroup>
-                <optgroup label="P Series">
-                  <option value="P2S">P2S</option>
-                  <option value="P1S">P1S</option>
-                  <option value="P1P">P1P</option>
-                </optgroup>
-                <optgroup label="A1 Series">
-                  <option value="A1">A1</option>
-                  <option value="A1 Mini">A1 Mini</option>
-                </optgroup>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-bambu-gray mb-1">{t('printers.modal.locationGroup')}</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
-                value={form.location || ''}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                placeholder={t('printers.modal.locationPlaceholder')}
-              />
-              <p className="text-xs text-bambu-gray mt-1">{t('printers.locationHelp')}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="auto_archive"
-                checked={form.auto_archive}
-                onChange={(e) => setForm({ ...form, auto_archive: e.target.checked })}
-                className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green"
-              />
-              <label htmlFor="auto_archive" className="text-sm text-bambu-gray">
-                {t('printers.modal.autoArchiveLabel')}
-              </label>
-            </div>
-            <div className="flex gap-3 pt-4">
-              <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" className="flex-1">
-                {t('printers.addPrinter')}
-              </Button>
-            </div>
-          </form>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -26,6 +26,7 @@ from backend.app.api.routes import (
     groups,
     inventory,
     kprofiles,
+    klipper,
     library,
     local_presets,
     maintenance,
@@ -328,6 +329,14 @@ _nozzle_count_updated: set[int] = set()
 
 async def on_printer_status_change(printer_id: int, state: PrinterState):
     """Handle printer status changes - broadcast via WebSocket."""
+    # Klipper printers use a different state shape — broadcast directly and return
+    if printer_manager.is_klipper(printer_id):
+        import dataclasses
+        payload = dataclasses.asdict(state)
+        payload["status"] = state.status.value
+        payload["printer_type"] = state.printer_type.value
+        await ws_manager.broadcast({"type": "printer_state", "printer_id": printer_id, "data": payload})
+        return
     # Only broadcast if something meaningful changed (reduce WebSocket spam)
     # Include rounded temperatures to detect meaningful temp changes (within 1 degree)
     temps = state.temperatures or {}
@@ -2925,7 +2934,9 @@ async def record_ams_history():
                 for printer in printers:
                     # Get current state from printer manager
                     state = printer_manager.get_status(printer.id)
-                    if not state or not state.connected or not state.raw_data:
+                    if not state or printer_manager.is_klipper(printer.id):
+                        continue  # Skip disconnected or Klipper printers (no AMS data)
+                    if not state.connected or not state.raw_data:
                         continue  # Skip disconnected printers - don't use stale data
 
                     raw_data = state.raw_data
@@ -3117,9 +3128,10 @@ async def track_printer_runtime():
                     if not state:
                         logger.debug("[%s] Runtime tracking: no state available", printer.name)
                         continue
-                    if not state.connected:
-                        logger.debug("[%s] Runtime tracking: not connected", printer.name)
-                        continue
+                    if not state or printer_manager.is_klipper(printer.id):
+                        continue  # Skip disconnected or Klipper printers (no AMS data)
+                    if not state.connected or not state.raw_data:
+                        continue  # Skip disconnected printers - don't use stale data
 
                     # Check if printer is in an active state (RUNNING or PAUSE)
                     if state.state in ("RUNNING", "PAUSE"):
@@ -3577,6 +3589,7 @@ app.include_router(print_log.router, prefix=app_settings.api_prefix)
 app.include_router(print_queue.router, prefix=app_settings.api_prefix)
 app.include_router(background_dispatch_routes.router, prefix=app_settings.api_prefix)
 app.include_router(kprofiles.router, prefix=app_settings.api_prefix)
+app.include_router(klipper.router, prefix=app_settings.api_prefix)
 app.include_router(notifications.router, prefix=app_settings.api_prefix)
 app.include_router(notification_templates.router, prefix=app_settings.api_prefix)
 app.include_router(spoolman.router, prefix=app_settings.api_prefix)

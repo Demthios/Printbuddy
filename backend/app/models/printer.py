@@ -35,6 +35,14 @@ class Printer(Base):
     plate_detection_roi_y: Mapped[float | None] = mapped_column(Float, nullable=True)  # Y start %
     plate_detection_roi_w: Mapped[float | None] = mapped_column(Float, nullable=True)  # Width %
     plate_detection_roi_h: Mapped[float | None] = mapped_column(Float, nullable=True)  # Height %
+    # Klipper/Moonraker configuration (printer_type == "klipper" only)
+    printer_type: Mapped[str] = mapped_column(String(20), default="bambu")
+    moonraker_host: Mapped[str | None] = mapped_column(String(253), nullable=True)
+    moonraker_port: Mapped[int | None] = mapped_column(nullable=True, default=7125)
+    moonraker_api_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    klipper_camera_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    klipper_upload_subfolder: Mapped[str | None] = mapped_column(String(100), nullable=True, default="printbuddy")
+
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
