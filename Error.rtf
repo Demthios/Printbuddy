@@ -1,0 +1,515 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;\f1\fnil\fcharset0 Menlo-Bold;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red57\green192\blue38;\red56\green185\blue199;
+}
+{\*\expandedcolortbl;;\csgray\c0;\cssrgb\c25706\c77963\c19557;\cssrgb\c25546\c77007\c82023;
+}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2 \CocoaLigature0 (venv) demths-Mac-mini:printbuddy demth$ python3 -c "from backend.app.main import app" 2>&1\
+2026-03-05 18:40:49,333 INFO [root] Logging to file: /Users/demth/Desktop/Data/printbuddy/logs/bambuddy.log\
+2026-03-05 18:40:49,334 INFO [root] Bambuddy starting - debug=False, log_level=INFO\
+(venv) demths-Mac-mini:printbuddy demth$ uvicorn backend.app.main:app --host 0.0.0.0 --port 8001\
+2026-03-05 18:41:03,715 INFO [root] Logging to file: /Users/demth/Desktop/Data/printbuddy/logs/bambuddy.log\
+2026-03-05 18:41:03,716 INFO [root] Bambuddy starting - debug=False, log_level=INFO\
+\cf3 INFO\cf2 :     Started server process [\cf4 35637\cf2 ]\
+\cf3 INFO\cf2 :     Waiting for application startup.\
+2026-03-05 18:41:04,577 INFO [backend.app.services.mqtt_relay] MQTT relay disabled\
+2026-03-05 18:41:04,582 INFO [backend.app.services.background_dispatch] Background dispatch dispatcher started\
+2026-03-05 18:41:04,582 INFO [backend.app.services.smart_plug_manager] Smart plug scheduler started\
+2026-03-05 18:41:04,585 INFO [backend.app.services.print_scheduler] Print scheduler started\
+2026-03-05 18:41:04,587 INFO [backend.app.services.notification_service] Notification digest scheduler started\
+2026-03-05 18:41:04,587 INFO [backend.app.services.github_backup] Starting GitHub backup scheduler\
+2026-03-05 18:41:04,587 INFO [backend.app.main] AMS history recording started\
+2026-03-05 18:41:04,587 INFO [backend.app.main] Printer runtime tracking started\
+2026-03-05 18:41:04,587 INFO [backend.app.main] SpoolBuddy watchdog started\
+2026-03-05 18:41:04,587 INFO [backend.app.main] Camera stream cleanup started\
+2026-03-05 18:41:04,695 INFO [root] Virtual printer manager synced from database\
+\cf3 INFO\cf2 :     Application startup complete.\
+\cf3 INFO\cf2 :     Uvicorn running on 
+\f1\b http://0.0.0.0:8001
+\f0\b0  (Press CTRL+C to quit)\
+[INFO] [Test Klipper] Connection loop started for 192.168.20.160:7125\
+2026-03-05 18:41:14,999 INFO [backend.app.core.klipper.client] Connecting to Moonraker at ws://192.168.20.160:7125/websocket\
+2026-03-05 18:41:15,010 INFO [backend.app.core.klipper.client] Connected to Moonraker at 192.168.20.160:7125\
+[INFO] [Test Klipper] Klippy state: ready\
+[INFO] [Test Klipper] Initial state: idle\
+2026-03-05 18:41:15,198 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:15,448 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:15,699 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:15,950 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:15,999 WARNING [backend.app.api.routes.klipper] Klipper printer 1 added to DB but connection failed: 'KlipperPrinter' object has no attribute 'is_connected'\
+\cf3 INFO\cf2 :     127.0.0.1:55440 - "
+\f1\b POST /api/v1/klipper/printers HTTP/1.1
+\f0\b0 " \cf3 201 Created\cf2 \
+2026-03-05 18:41:16,201 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:16,452 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:16,703 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:16,954 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:17,205 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:17,456 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:17,707 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:17,958 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:18,209 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:18,460 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:18,711 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:18,963 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:19,214 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:19,465 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:19,696 WARNING [backend.app.main] Runtime tracking failed: 'PrinterState' object has no attribute 'connected'\
+2026-03-05 18:41:19,716 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:19,968 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:20,218 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:20,469 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:20,721 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:20,972 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:21,223 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:21,477 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:21,727 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:21,978 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:22,229 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:22,480 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:22,731 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:22,982 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:23,233 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:23,484 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+2026-03-05 18:41:23,735 ERROR [backend.app.services.printer_manager] Exception in scheduled callback: 'PrinterState' object has no attribute 'temperatures'\
+Traceback (most recent call last):\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/services/printer_manager.py", line 178, in handle_exception\
+    f.result()\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result\
+    return self.__get_result()\
+           ^^^^^^^^^^^^^^^^^^^\
+  File "/usr/local/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result\
+    raise self._exception\
+  File "/Users/demth/Desktop/Data/printbuddy/backend/app/main.py", line 334, in on_printer_status_change\
+    temps = state.temperatures or \{\}\
+            ^^^^^^^^^^^^^^^^^^\
+AttributeError: 'PrinterState' object has no attribute 'temperatures'\
+^C\cf3 INFO\cf2 :     Shutting down\
+\cf3 INFO\cf2 :     Waiting for application shutdown.\
+2026-03-05 18:41:23,944 INFO [backend.app.services.print_scheduler] Print scheduler stopped\
+2026-03-05 18:41:23,944 INFO [backend.app.services.background_dispatch] Background dispatch dispatcher stopped\
+2026-03-05 18:41:23,944 INFO [backend.app.services.smart_plug_manager] Smart plug scheduler stopped\
+2026-03-05 18:41:23,945 INFO [backend.app.services.notification_service] Notification digest scheduler stopped\
+2026-03-05 18:41:23,945 INFO [backend.app.services.github_backup] Stopped GitHub backup scheduler\
+2026-03-05 18:41:23,945 INFO [backend.app.main] AMS history recording stopped\
+2026-03-05 18:41:23,945 INFO [backend.app.main] Printer runtime tracking stopped\
+2026-03-05 18:41:23,945 INFO [backend.app.main] SpoolBuddy watchdog stopped\
+2026-03-05 18:41:23,945 INFO [backend.app.main] Camera stream cleanup stopped\
+2026-03-05 18:41:23,945 INFO [backend.app.services.virtual_printer.manager] Stopping all virtual printer services...\
+2026-03-05 18:41:23,945 INFO [backend.app.services.virtual_printer.manager] All virtual printer services stopped\
+2026-03-05 18:41:23,947 INFO [root] WAL checkpoint completed\
+\cf3 INFO\cf2 :     Application shutdown complete.\
+\cf3 INFO\cf2 :     Finished server process [\cf4 35637\cf2 ]\
+(venv) demths-Mac-mini:printbuddy demth$ \
+}

@@ -1,0 +1,65 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c0;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2 \CocoaLigature0 \
+demths-Mac-mini:frontend demth$ docker compose logs bambuddy -f 2>&1 | grep -i "camera\\|stream\\|klipper"\
+bambuddy  | 2026-03-06 06:07:59,813 INFO [backend.app.core.klipper.client] Connecting to Moonraker at ws://192.168.20.160:7125/websocket\
+bambuddy  | [INFO] [Virtual Klipper] Connection loop started for 192.168.20.160:7125\
+bambuddy  | 2026-03-06 06:07:59,821 INFO [backend.app.core.klipper.client] Connected to Moonraker at 192.168.20.160:7125\
+bambuddy  | [INFO] [Virtual Klipper] Klippy state: ready\
+bambuddy  | [INFO] [Virtual Klipper] Initial state: idle\
+bambuddy  | 2026-03-06 06:08:00,824 INFO [backend.app.main] Camera stream cleanup started\
+bambuddy  | INFO:     24.111.46.11:0 - "GET /camera/1 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:08:20,132 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     24.111.46.11:0 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773700168 HTTP/1.1" 200 OK\
+bambuddy  | INFO:     24.111.46.11:0 - "GET /api/v1/printers/1/camera/status HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:08:31,218 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:08:31,219 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:08:31,248 INFO [backend.app.api.routes.camera] Stopped 0 camera stream(s) for printer 1\
+bambuddy  | INFO:     24.111.46.11:0 - "POST /api/v1/printers/1/camera/stop HTTP/1.1" 200 OK\
+bambuddy  | INFO:     127.0.0.1:55134 - "GET /camera/1 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:08:40,683 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:55180 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773720667 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:08:43,591 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:55174 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773723575 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:08:45,591 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:55148 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773725576 HTTP/1.1" 200 OK\
+bambuddy  | INFO:     127.0.0.1:55152 - "POST /api/v1/printers/1/camera/stop HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:08:46,692 INFO [backend.app.api.routes.camera] Stopped 0 camera stream(s) for printer 1\
+bambuddy  | 2026-03-06 06:08:46,724 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:08:46,725 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:08:46,727 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:08:46,727 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:08:46,728 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:08:46,728 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | INFO:     127.0.0.1:55152 - "GET /camera/1 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:10:18,352 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:55152 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773818335 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:10:21,293 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:42118 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773821279 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:10:23,292 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:42096 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773823280 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:10:26,498 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:42104 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773826483 HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:10:27,296 INFO [backend.app.api.routes.camera] Using Klipper camera for printer 1 at 15 fps\
+bambuddy  | INFO:     127.0.0.1:36808 - "GET /api/v1/printers/1/camera/stream?fps=15&t=1772773827281 HTTP/1.1" 200 OK\
+bambuddy  | INFO:     127.0.0.1:36818 - "POST /api/v1/printers/1/camera/stop HTTP/1.1" 200 OK\
+bambuddy  | 2026-03-06 06:10:32,051 INFO [backend.app.api.routes.camera] Stopped 0 camera stream(s) for printer 1\
+bambuddy  | 2026-03-06 06:10:32,096 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:10:32,096 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:10:32,097 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:10:32,097 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:10:32,098 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:10:32,098 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:10:32,100 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:10:32,102 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+bambuddy  | 2026-03-06 06:10:32,108 INFO [backend.app.services.external_camera] MJPEG stream cancelled\
+bambuddy  | 2026-03-06 06:10:32,108 WARNING [backend.app.services.external_camera] External MJPEG stream ended, reconnecting (attempt 1/3)...\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\
+}

@@ -1,0 +1,62 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c0;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2 \CocoaLigature0 (venv) demths-Mac-mini:printbuddy demth$ docker compose logs bambuddy 2>&1 | tail -50\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context\
+bambuddy  |     self._handle_dbapi_exception(\
+bambuddy  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\
+bambuddy  |         e, str_statement, effective_parameters, cursor, context\
+bambuddy  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\
+bambuddy  |     )\
+bambuddy  |     ^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception\
+bambuddy  |     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context\
+bambuddy  |     self.dialect.do_execute(\
+bambuddy  |     ~~~~~~~~~~~~~~~~~~~~~~~^\
+bambuddy  |         cursor, str_statement, effective_parameters, context\
+bambuddy  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\
+bambuddy  |     )\
+bambuddy  |     ^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute\
+bambuddy  |     cursor.execute(statement, parameters)\
+bambuddy  |     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 182, in execute\
+bambuddy  |     self._adapt_connection._handle_exception(error)\
+bambuddy  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 342, in _handle_exception\
+bambuddy  |     raise error\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 164, in execute\
+bambuddy  |     self.await_(_cursor.execute(operation, parameters))\
+bambuddy  |     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only\
+bambuddy  |     return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501\
+bambuddy  |            ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn\
+bambuddy  |     value = await result\
+bambuddy  |             ^^^^^^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/aiosqlite/cursor.py", line 40, in execute\
+bambuddy  |     await self._execute(self._cursor.execute, sql, parameters)\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/aiosqlite/cursor.py", line 32, in _execute\
+bambuddy  |     return await self._conn._execute(fn, *args, **kwargs)\
+bambuddy  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/aiosqlite/core.py", line 160, in _execute\
+bambuddy  |     return await future\
+bambuddy  |            ^^^^^^^^^^^^\
+bambuddy  |   File "/usr/local/lib/python3.13/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread\
+bambuddy  |     result = function()\
+bambuddy  | sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: printers.printer_type\
+bambuddy  | [SQL: SELECT printers.id, printers.name, printers.serial_number, printers.ip_address, printers.access_code, printers.model, printers.location, printers.nozzle_count, printers.is_active, printers.auto_archive, printers.print_hours_offset, printers.runtime_seconds, printers.last_runtime_update, printers.external_camera_url, printers.external_camera_type, printers.external_camera_enabled, printers.plate_detection_enabled, printers.plate_detection_roi_x, printers.plate_detection_roi_y, printers.plate_detection_roi_w, printers.plate_detection_roi_h, printers.printer_type, printers.moonraker_host, printers.moonraker_port, printers.moonraker_api_key, printers.klipper_camera_url, printers.klipper_upload_subfolder, printers.created_at, printers.updated_at \
+bambuddy  | FROM printers \
+bambuddy  | WHERE printers.is_active IS 1]\
+bambuddy  | (Background on this error at: https://sqlalche.me/e/20/e3q8)\
+bambuddy  | \
+bambuddy  | ERROR:    Application startup failed. Exiting.\
+(venv) demths-Mac-mini:printbuddy demth$ \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\
+}

@@ -399,3 +399,71 @@ async def list_files(printer_id: int):
             modified=float(f.get("modified", 0)),
         ))
     return result
+
+class SetTemperatureRequest(BaseModel):
+    heater: str = Field(..., example="extruder")  # "extruder" or "heater_bed"
+    temperature: float = Field(..., ge=0, le=350)
+
+
+@router.post(
+    "/printers/{printer_id}/temperature",
+    response_model=PrintControlResponse,
+    summary="Set heater temperature",
+)
+async def set_temperature(printer_id: int, body: SetTemperatureRequest):
+    """
+    Set a heater target temperature.
+    heater: "extruder" for nozzle, "heater_bed" for bed.
+    temperature: 0 to turn off, otherwise target in °C.
+    """
+    client = _get_klipper_printer(printer_id)
+    success = await client.set_temperature(body.heater, body.temperature)
+    return PrintControlResponse(
+        success=success,
+        message=f"Temperature set to {body.temperature}°C" if success else "Failed to set temperature",
+    )
+
+
+@router.post(
+    "/printers/{printer_id}/emergency-stop",
+    response_model=PrintControlResponse,
+    summary="Emergency stop — halts all motion and heaters immediately",
+)
+async def emergency_stop(printer_id: int):
+    """
+    Trigger EMERGENCY_STOP on the Klipper printer.
+    This immediately halts all motion and turns off all heaters.
+    A firmware restart will be required to resume operation.
+    """
+    client = _get_klipper_printer(printer_id)
+    success = await client.emergency_stop()
+    return PrintControlResponse(
+        success=success,
+        message="Emergency stop triggered" if success else "Failed to trigger emergency stop",
+    )
+
+
+@router.get(
+    "/printers/{printer_id}/macros",
+    response_model=list[str],
+    summary="List available gcode macros",
+)
+async def list_macros(printer_id: int):
+    """Return user-defined gcode macros available on the printer."""
+    client = _get_klipper_printer(printer_id)
+    return await client.list_macros()
+
+
+@router.post(
+    "/printers/{printer_id}/macros/{macro_name}",
+    response_model=PrintControlResponse,
+    summary="Run a gcode macro",
+)
+async def run_macro(printer_id: int, macro_name: str):
+    """Execute a gcode macro by name."""
+    client = _get_klipper_printer(printer_id)
+    success = await client.run_macro(macro_name)
+    return PrintControlResponse(
+        success=success,
+        message=f"Macro {macro_name} executed" if success else f"Failed to run macro {macro_name}",
+    )

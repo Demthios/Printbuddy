@@ -13,7 +13,52 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const INITIAL_RECONNECT_DELAY = 2000; // 2 seconds
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
 const STALL_CHECK_INTERVAL = 5000; // Check every 5 seconds
-
+function KlipperCameraView({ printerId, printerName, hasCamera }: { printerId: number; printerName?: string; hasCamera: boolean }) {
+  const [imgSrc, setImgSrc] = useState(`/api/v1/printers/${printerId}/camera/snapshot?t=${Date.now()}`);
+  const [error, setError] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (!hasCamera) return;
+    setError(false);
+    intervalRef.current = setInterval(() => {
+      setImgSrc(`/api/v1/printers/${printerId}/camera/snapshot?t=${Date.now()}`);
+    }, 200);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [printerId, hasCamera]);
+  return (
+    <div className="min-h-screen bg-black flex flex-col">
+      <div className="flex items-center justify-between px-4 py-2 bg-bambu-dark-secondary border-b border-bambu-dark-tertiary">
+        <h1 className="text-sm font-medium text-white flex items-center gap-2">
+          <Camera className="w-4 h-4" />
+          {printerName || `Printer ${printerId}`}
+        </h1>
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+        {!hasCamera ? (
+          <div className="text-center text-bambu-gray">
+            <Camera className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No camera configured for this printer.</p>
+          </div>
+        ) : error ? (
+          <div className="text-center text-bambu-gray">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Camera unavailable</p>
+          </div>
+        ) : (
+          <img
+            src={imgSrc}
+            alt="Camera"
+            className="max-w-full max-h-full object-contain"
+            onError={() => setError(true)}
+            onLoad={() => setError(false)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 export function CameraPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -103,7 +148,7 @@ export function CameraPage() {
     stopSentRef.current = false;
 
     const sendStopOnce = () => {
-      if (id > 0 && !stopSentRef.current) {
+      if (id > 0 && !stopSentRef.current && printer?.printer_type !== 'klipper') {
         stopSentRef.current = true;
         const headers: Record<string, string> = {};
         const token = getAuthToken();
@@ -132,12 +177,12 @@ export function CameraPage() {
       // Send stop signal only once
       sendStopOnce();
     };
-  }, [id]);
+  }, [id, printer]);
 
   // Auto-hide loading after timeout
   useEffect(() => {
     if (streamLoading && !transitioning) {
-      const timeout = streamMode === 'stream' ? 3000 : 20000;
+      const timeout = streamMode === 'stream' ? 15000 : 20000;
       const timer = setTimeout(() => {
         setStreamLoading(false);
       }, timeout);
@@ -272,7 +317,7 @@ export function CameraPage() {
         // Trigger reconnect if:
         // 1. Backend reports stall (no frames for 10+ seconds)
         // 2. OR stream is not active anymore (process died)
-        if (status.stalled || (!status.active && !streamError)) {
+        if ((status.stalled || (!status.active && !streamError)) && printer?.printer_type !== 'klipper') {
           console.log(`Stream issue detected: stalled=${status.stalled}, active=${status.active}, reconnecting...`);
           if (stallCheckIntervalRef.current) {
             clearInterval(stallCheckIntervalRef.current);
@@ -294,11 +339,10 @@ export function CameraPage() {
     };
   }, [streamMode, streamLoading, streamError, isReconnecting, transitioning, id, attemptReconnect]);
 
-  const handleStreamError = () => {
+    const handleStreamError = () => {
     setStreamLoading(false);
-
-    // Only auto-reconnect for live stream mode
-    if (streamMode === 'stream' && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    // Only auto-reconnect for live stream mode, and not for Klipper
+    if (streamMode === 'stream' && reconnectAttempts < MAX_RECONNECT_ATTEMPTS && printer?.printer_type !== 'klipper') {
       attemptReconnect();
     } else {
       setStreamError(true);
@@ -590,6 +634,10 @@ export function CameraPage() {
     );
   }
 
+  console.log('printer at render:', printer?.printer_type, printer?.name);
+  if (printer?.printer_type === 'klipper') {
+    return <KlipperCameraView printerId={id} printerName={printer?.name} hasCamera={!!(printer.klipper_camera_url || (printer as any).external_camera_url)} />;
+  }
   return (
     <div ref={containerRef} className="min-h-screen bg-black flex flex-col">
       {/* Header */}

@@ -261,6 +261,108 @@ class KlipperPrinter(BasePrinter):
             self._log(f"Set temperature failed: {exc}", "ERROR")
             return False
 
+    async def list_macros(self) -> list[str]:
+        """Return user-defined gcode macros from Moonraker."""
+        try:
+            result = await self._client.send_request("printer.objects.list")
+            objects = result.get("objects", [])
+            macros = []
+            skip = {"PAUSE", "RESUME", "CANCEL_PRINT", "M104", "M109", "M140", "M190", "M117", "M600"}
+            for obj in objects:
+                if obj.startswith("gcode_macro "):
+                    name = obj[len("gcode_macro "):]
+                    if not name.startswith("_") and name not in skip:
+                        macros.append(name)
+            return sorted(macros)
+        except Exception as exc:
+            self._log(f"list_macros failed: {exc}", "ERROR")
+            return []
+
+    async def run_macro(self, macro_name: str) -> bool:
+        """Run a gcode macro by name."""
+        # Sanitize: only allow alphanumeric + underscore
+        import re
+        if not re.match(r'^[A-Z0-9_]+$', macro_name.upper()):
+            self._log(f"Invalid macro name: {macro_name}", "ERROR")
+            return False
+        try:
+            await self._client.send_request(
+                "printer.gcode.script",
+                params={"script": macro_name.upper()},
+            )
+            return True
+        except Exception as exc:
+            self._log(f"run_macro {macro_name} failed: {exc}", "ERROR")
+            return False
+
+    async def list_macros(self) -> list[str]:
+        """Return user-defined gcode macros from Moonraker."""
+        try:
+            result = await self._client.send_request("printer.objects.list")
+            objects = result.get("objects", [])
+            macros = []
+            skip = {"PAUSE", "RESUME", "CANCEL_PRINT", "M104", "M109", "M140", "M190", "M117", "M600"}
+            for obj in objects:
+                if obj.startswith("gcode_macro "):
+                    name = obj[len("gcode_macro "):]
+                    if not name.startswith("_") and name not in skip:
+                        macros.append(name)
+            return sorted(macros)
+        except Exception as exc:
+            self._log(f"list_macros failed: {exc}", "ERROR")
+            return []
+
+    async def run_macro(self, macro_name: str) -> bool:
+        """Run a gcode macro by name."""
+        # Sanitize: only allow alphanumeric + underscore
+        import re
+        if not re.match(r'^[A-Z0-9_]+$', macro_name.upper()):
+            self._log(f"Invalid macro name: {macro_name}", "ERROR")
+            return False
+        try:
+            await self._client.send_request(
+                "printer.gcode.script",
+                params={"script": macro_name.upper()},
+            )
+            return True
+        except Exception as exc:
+            self._log(f"run_macro {macro_name} failed: {exc}", "ERROR")
+            return False
+
+    async def list_macros(self) -> list[str]:
+        """Return user-defined gcode macros from Moonraker."""
+        try:
+            result = await self._client.send_request("printer.objects.list")
+            objects = result.get("objects", [])
+            macros = []
+            skip = {"PAUSE", "RESUME", "CANCEL_PRINT", "M104", "M109", "M140", "M190", "M117", "M600"}
+            for obj in objects:
+                if obj.startswith("gcode_macro "):
+                    name = obj[len("gcode_macro "):]
+                    if not name.startswith("_") and name not in skip:
+                        macros.append(name)
+            return sorted(macros)
+        except Exception as exc:
+            self._log(f"list_macros failed: {exc}", "ERROR")
+            return []
+
+    async def run_macro(self, macro_name: str) -> bool:
+        """Run a gcode macro by name."""
+        # Sanitize: only allow alphanumeric + underscore
+        import re
+        if not re.match(r'^[A-Z0-9_]+$', macro_name.upper()):
+            self._log(f"Invalid macro name: {macro_name}", "ERROR")
+            return False
+        try:
+            await self._client.send_request(
+                "printer.gcode.script",
+                params={"script": macro_name.upper()},
+            )
+            return True
+        except Exception as exc:
+            self._log(f"run_macro {macro_name} failed: {exc}", "ERROR")
+            return False
+
     async def list_files(self) -> list[dict]:
         """Return the list of gcode files on this printer."""
         return await self._transfer.list_files()

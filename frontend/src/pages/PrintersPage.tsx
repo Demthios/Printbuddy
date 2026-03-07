@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
@@ -42,6 +42,7 @@ import {
   XCircle,
   User,
   Home,
+  OctagonX,
 } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
@@ -1393,6 +1394,98 @@ function mapModelCode(ssdpModel: string | null): string {
   return modelMap[ssdpModel] || ssdpModel;
 }
 
+function KlipperTempRow({ printerId, label, heater, actual, target, color }: { printerId: number; label: string; heater: string; actual: number; target: number; color: string }) {
+  const [editing, setEditing] = React.useState(false);
+  const [inputVal, setInputVal] = React.useState(String(Math.round(target)));
+  const [pending, setPending] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const isHeating = actual < target - 2 && target > 0;
+  const submit = async () => {
+    const temp = parseFloat(inputVal);
+    if (isNaN(temp) || temp < 0 || temp > 350) { setEditing(false); return; }
+    setPending(true);
+    try { await api.setKlipperTemperature(printerId, heater, temp); } catch {}
+    setPending(false);
+    setEditing(false);
+  };
+  React.useEffect(() => { if (editing && inputRef.current) inputRef.current.focus(); }, [editing]);
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5 bg-bambu-dark rounded-lg">
+      <HeaterThermometer className="w-3.5 h-3.5 flex-shrink-0" color={color} isHeating={isHeating} />
+      <span className="text-[9px] text-bambu-gray w-8 flex-shrink-0">{label}</span>
+      <span className="text-[11px] text-white flex-shrink-0">{Math.round(actual)}°C</span>
+      <span className="text-[9px] text-bambu-gray flex-shrink-0">→</span>
+      {editing ? (
+        <div className="flex items-center gap-1">
+          <input ref={inputRef} type="number" value={inputVal}
+            onChange={e => setInputVal(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") setEditing(false); }}
+            onBlur={submit}
+            className="w-14 text-[11px] bg-bambu-dark-secondary text-white border border-bambu-green rounded px-1 py-0.5 outline-none"
+            min={0} max={350} disabled={pending} />
+          <span className="text-[9px] text-bambu-gray">°C</span>
+        </div>
+      ) : (
+        <button onClick={() => { setInputVal(String(Math.round(target))); setEditing(true); }}
+          className="text-[11px] text-bambu-gray hover:text-white transition-colors hover:underline underline-offset-2"
+          title="Click to set target temperature">
+          {target > 0 ? Math.round(target) + "°C" : "Off"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+
+function KlipperMacroPanel({ printerId }: { printerId: number }) {
+  const { data: macros, isLoading } = useQuery({
+    queryKey: ['klipperMacros', printerId],
+    queryFn: () => api.listKlipperMacros(printerId),
+    staleTime: 30000,
+  });
+  const [running, setRunning] = React.useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const runMacro = async (name: string) => {
+    setRunning(name);
+    try {
+      const result = await api.runKlipperMacro(printerId, name);
+      if (result.success) {
+        showToast(`Macro ${name} executed`, 'success');
+      } else {
+        showToast(`Failed: ${result.message}`, 'error');
+      }
+    } catch {
+      showToast(`Failed to run ${name}`, 'error');
+    }
+    setRunning(null);
+  };
+
+  if (isLoading || !macros?.length) return null;
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[10px] uppercase tracking-wider text-bambu-gray font-medium">Macros</span>
+        <div className="flex-1 h-px bg-bambu-dark-tertiary/30" />
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {macros.map((name: string) => (
+          <button
+            key={name}
+            onClick={() => runMacro(name)}
+            disabled={running === name}
+            className="px-2.5 py-1 text-[11px] rounded bg-bambu-dark hover:bg-bambu-dark-tertiary text-bambu-gray hover:text-white transition-colors disabled:opacity-50"
+          >
+            {running === name ? '...' : name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 function PrinterCard({
   printer,
   hideIfDisconnected,
@@ -2629,6 +2722,22 @@ function PrinterCard({
               );
             })()}
 
+            {/* Klipper Temperature Controls */}
+            {printer.printer_type === 'klipper' && status.temperatures && viewMode === 'expanded' && (
+              <div className="mt-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] uppercase tracking-wider text-bambu-gray font-medium">Temperature Control</span>
+                  <div className="flex-1 h-px bg-bambu-dark-tertiary/30" />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <KlipperTempRow printerId={printer.id} label="Nozzle" heater="extruder"
+                    actual={status.temperatures.nozzle || 0} target={status.temperatures.nozzle_target || 0} color="text-orange-400" />
+                  <KlipperTempRow printerId={printer.id} label="Bed" heater="heater_bed"
+                    actual={status.temperatures.bed || 0} target={status.temperatures.bed_target || 0} color="text-blue-400" />
+                </div>
+              </div>
+            )}
+
             {/* Controls - Fans + Print Buttons */}
             {viewMode === 'expanded' && (() => {
               // Determine print state for control buttons
@@ -2730,9 +2839,29 @@ function PrinterCard({
                       </button>
                     </div>
                   </div>
+                  {printer.printer_type === 'klipper' && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Emergency stop? This will halt all motion and heaters immediately.')) return;
+                          try { await api.klipperEmergencyStop(printer.id); } catch {}
+                        }}
+                        disabled={!hasPermission('printers:control')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600/20 text-red-400 hover:bg-red-600/30 disabled:opacity-50 transition-colors"
+                        title="Emergency Stop">
+                        <OctagonX className="w-3.5 h-3.5" />
+                        Emergency Stop
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })()}
+
+            {/* Klipper Macros */}
+            {printer.printer_type === 'klipper' && viewMode === 'expanded' && status?.connected && (
+              <KlipperMacroPanel printerId={printer.id} />
+            )}
 
             {/* AMS Units - 2-Column Grid Layout */}
             {(amsData?.length > 0 || status.vt_tray.length > 0) && viewMode === 'expanded' && (() => {

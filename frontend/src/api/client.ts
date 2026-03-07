@@ -2309,7 +2309,22 @@ export const api = {
     request<{ printer_id: number; name: string; status: string }>('/klipper/printers', {
       method: 'POST',
       body: JSON.stringify(data),
-    }),  
+    }),
+  setKlipperTemperature: (printerId: number, heater: string, temperature: number) =>
+    request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/temperature`, {
+      method: 'POST',
+      body: JSON.stringify({ heater, temperature }),
+    }),
+  listKlipperMacros: (printerId: number) =>
+    request<string[]>(`/klipper/printers/${printerId}/macros`),
+  runKlipperMacro: (printerId: number, macroName: string) =>
+    request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/macros/${macroName}`, {
+      method: 'POST',
+    }),
+  klipperEmergencyStop: (printerId: number) =>
+    request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/emergency-stop`, {
+      method: 'POST',
+    }),
   updatePrinter: (id: number, data: Partial<PrinterCreate>) =>
     request<Printer>(`/printers/${id}`, {
       method: 'PATCH',
