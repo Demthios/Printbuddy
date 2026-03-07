@@ -3744,6 +3744,17 @@ function PrinterCard({
               >
                 <Video className="w-4 h-4" />
               </Button>
+              {/* Klipper file manager button */}
+              {printer.printer_type === 'klipper' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate(`/klipper/${printer.id}/files`)}
+                  title="Klipper File Manager — upload & reprint gcode files"
+                >
+                  <HardDrive className="w-4 h-4" />
+                </Button>
+              )}
              {/* Split button: main part toggles detection, chevron opens modal */}
               {printer.printer_type !== 'klipper' && <div className={`inline-flex rounded-md ${printer.plate_detection_enabled ? 'ring-1 ring-green-500' : ''}`}>
                 <Button

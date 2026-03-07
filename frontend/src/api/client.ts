@@ -2325,6 +2325,50 @@ export const api = {
     request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/emergency-stop`, {
       method: 'POST',
     }),
+  listKlipperFiles: (printerId: number) =>
+    request<{ filename: string; size: number; modified: number }[]>(`/klipper/printers/${printerId}/files`),
+  reprintKlipperFile: (printerId: number, filename: string) =>
+    request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/print`, {
+      method: 'POST',
+      body: JSON.stringify({ filename }),
+    }),
+  uploadKlipperFile: (
+    printerId: number,
+    file: File,
+    startPrint: boolean,
+    onProgress?: (pct: number) => void,
+  ): Promise<{ success: boolean; filename: string; message: string }> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('start_print', String(startPrint));
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/klipper/printers/${printerId}/upload`);
+      if (authToken) xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+        });
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { resolve({ success: true, filename: file.name, message: 'Upload complete' }); }
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.detail || `HTTP ${xhr.status}`));
+          } catch { reject(new Error(`HTTP ${xhr.status}`)); }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.send(formData);
+    });
+  },
   updatePrinter: (id: number, data: Partial<PrinterCreate>) =>
     request<Printer>(`/printers/${id}`, {
       method: 'PATCH',

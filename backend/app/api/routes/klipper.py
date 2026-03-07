@@ -377,6 +377,28 @@ async def upload_file(
     return UploadResponse(success=success, filename=file.filename, message=msg)
 
 
+class StartPrintRequest(BaseModel):
+    filename: str = Field(..., description="Path relative to gcodes root, e.g. 'printbuddy/part.gcode'")
+
+
+@router.post(
+    "/printers/{printer_id}/print",
+    response_model=PrintControlResponse,
+    summary="Start printing an already-uploaded file",
+)
+async def start_print(printer_id: int, body: StartPrintRequest):
+    """
+    Tell the printer to start printing a file that is already on its storage.
+    Use this for reprinting without re-uploading.
+    """
+    client = _get_klipper_printer(printer_id)
+    success = await client.start_print(body.filename)
+    return PrintControlResponse(
+        success=success,
+        message="Print started" if success else f"Failed to start print for {body.filename}",
+    )
+
+
 @router.get(
     "/printers/{printer_id}/files",
     response_model=list[FileListItem],

@@ -363,6 +363,17 @@ class KlipperPrinter(BasePrinter):
             self._log(f"run_macro {macro_name} failed: {exc}", "ERROR")
             return False
 
+    async def start_print(self, filename: str) -> bool:
+        """Start printing an already-uploaded file by its path on the printer."""
+        try:
+            started = await self._transfer.start_print(filename)
+            if started:
+                self._log(f"Reprint started: {filename}")
+            return started
+        except Exception as exc:
+            self._log(f"start_print failed for {filename}: {exc}", "ERROR")
+            return False
+
     async def list_files(self) -> list[dict]:
         """Return the list of gcode files on this printer."""
         return await self._transfer.list_files()

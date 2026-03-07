@@ -12,6 +12,7 @@ import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { FileManagerPage } from './pages/FileManagerPage';
 import { CameraPage } from './pages/CameraPage';
+import { KlipperFilesPage } from './pages/KlipperFilesPage';
 import { StreamOverlayPage } from './pages/StreamOverlayPage';
 import { ExternalLinkPage } from './pages/ExternalLinkPage';
 import { GroupEditPage } from './pages/GroupEditPage';
@@ -146,6 +147,7 @@ function App() {
                   <Route path="groups" element={<Navigate to="/settings?tab=users" replace />} />
                   <Route path="system" element={<SystemInfoPage />} />
                   <Route path="external/:id" element={<ExternalLinkPage />} />
+                  <Route path="klipper/:printerId/files" element={<KlipperFilesPage />} />
                 </Route>
               </Routes>
             </BrowserRouter>
