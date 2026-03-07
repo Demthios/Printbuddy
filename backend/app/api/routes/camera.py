@@ -382,7 +382,43 @@ async def camera_stream(
     import uuid
 
     printer = await get_printer_or_404(printer_id, db)
-    
+
+    # Klipper printers: proxy their configured camera URL
+    if printer.printer_type == "klipper" and printer.klipper_camera_url:
+        import time
+
+        from backend.app.services.external_camera import generate_mjpeg_stream
+
+        fps = min(max(fps, 1), 15)
+        logger.info(
+            "Using Klipper camera URL for printer %s at %s fps: %s",
+            printer_id, fps, printer.klipper_camera_url,
+        )
+
+        _stream_start_times[printer_id] = time.time()
+        _active_external_streams.add(printer_id)
+
+        async def klipper_stream_wrapper():
+            try:
+                async for frame in generate_mjpeg_stream(printer.klipper_camera_url, "mjpeg", fps):
+                    current_time = time.time()
+                    _last_frame_times[printer_id] = current_time
+                    _last_frames[printer_id] = frame
+                    yield frame
+            finally:
+                _active_external_streams.discard(printer_id)
+                logger.info("Klipper camera stream ended for printer %s", printer_id)
+
+        return StreamingResponse(
+            klipper_stream_wrapper(),
+            media_type="multipart/x-mixed-replace; boundary=frame",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
+
     # Check for external camera first
     if printer.external_camera_enabled and printer.external_camera_url:
         import time
@@ -604,6 +640,22 @@ async def camera_snapshot(
     from pathlib import Path
 
     printer = await get_printer_or_404(printer_id, db)
+
+    # Klipper printers: proxy their configured camera URL
+    if printer.printer_type == "klipper" and printer.klipper_camera_url:
+        from backend.app.services.external_camera import capture_frame
+
+        frame_data = await capture_frame(printer.klipper_camera_url, "mjpeg", timeout=15)
+        if not frame_data:
+            raise HTTPException(status_code=503, detail="Failed to capture frame from Klipper camera.")
+        return Response(
+            content=frame_data,
+            media_type="image/jpeg",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Content-Disposition": f'inline; filename="snapshot_{printer_id}.jpg"',
+            },
+        )
 
     # Check for external camera first
     if printer.external_camera_enabled and printer.external_camera_url:

@@ -14,19 +14,30 @@ const INITIAL_RECONNECT_DELAY = 2000; // 2 seconds
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
 const STALL_CHECK_INTERVAL = 5000; // Check every 5 seconds
 function KlipperCameraView({ printerId, printerName, hasCamera }: { printerId: number; printerName?: string; hasCamera: boolean }) {
-  const [imgSrc, setImgSrc] = useState(`/api/v1/printers/${printerId}/camera/snapshot?t=${Date.now()}`);
+  const [streamKey, setStreamKey] = useState(Date.now());
   const [error, setError] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    if (!hasCamera) return;
+  const flipKey = `klipper-camera-flip-${printerId}`;
+  const savedFlip = JSON.parse(localStorage.getItem(flipKey) || '{}');
+  const [flipH, setFlipH] = useState<boolean>(savedFlip.h ?? false);
+  const [flipV, setFlipV] = useState<boolean>(savedFlip.v ?? false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  const streamUrl = `/api/v1/printers/${printerId}/camera/stream?fps=15&t=${streamKey}`;
+
+  const handleError = () => setError(true);
+  const handleLoad = () => setError(false);
+
+  const refresh = () => {
+    if (imgRef.current) imgRef.current.src = '';
     setError(false);
-    intervalRef.current = setInterval(() => {
-      setImgSrc(`/api/v1/printers/${printerId}/camera/snapshot?t=${Date.now()}`);
-    }, 200);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [printerId, hasCamera]);
+    setStreamKey(Date.now());
+  };
+
+  const flipTransform = [
+    flipH ? 'scaleX(-1)' : '',
+    flipV ? 'scaleY(-1)' : '',
+  ].filter(Boolean).join(' ') || 'none';
+
   return (
     <div className="min-h-screen bg-black flex flex-col">
       <div className="flex items-center justify-between px-4 py-2 bg-bambu-dark-secondary border-b border-bambu-dark-tertiary">
@@ -34,6 +45,35 @@ function KlipperCameraView({ printerId, printerName, hasCamera }: { printerId: n
           <Camera className="w-4 h-4" />
           {printerName || `Printer ${printerId}`}
         </h1>
+        {hasCamera && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setFlipH(v => { const next = !v; localStorage.setItem(flipKey, JSON.stringify({ h: next, v: flipV })); return next; })}
+              title="Flip horizontal"
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                flipH ? 'bg-bambu-green text-black' : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-tertiary'
+              }`}
+            >
+              ↔ Flip H
+            </button>
+            <button
+              onClick={() => setFlipV(v => { const next = !v; localStorage.setItem(flipKey, JSON.stringify({ h: flipH, v: next })); return next; })}
+              title="Flip vertical"
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                flipV ? 'bg-bambu-green text-black' : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-tertiary'
+              }`}
+            >
+              ↕ Flip V
+            </button>
+            <button
+              onClick={refresh}
+              className="p-1.5 hover:bg-bambu-dark-tertiary rounded"
+              title="Restart stream"
+            >
+              <RefreshCw className="w-4 h-4 text-bambu-gray" />
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex-1 flex items-center justify-center">
         {!hasCamera ? (
@@ -44,15 +84,24 @@ function KlipperCameraView({ printerId, printerName, hasCamera }: { printerId: n
         ) : error ? (
           <div className="text-center text-bambu-gray">
             <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Camera unavailable</p>
+            <p className="mb-3">Camera unavailable</p>
+            <button
+              onClick={refresh}
+              className="px-4 py-2 bg-bambu-green text-white text-sm rounded hover:bg-bambu-green/80 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <img
-            src={imgSrc}
+            ref={imgRef}
+            key={streamKey}
+            src={streamUrl}
             alt="Camera"
             className="max-w-full max-h-full object-contain"
-            onError={() => setError(true)}
-            onLoad={() => setError(false)}
+            style={{ transform: flipTransform }}
+            onError={handleError}
+            onLoad={handleLoad}
           />
         )}
       </div>
