@@ -1633,6 +1633,7 @@ function PrinterCard({
   const [editingRoi, setEditingRoi] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [isSavingRoi, setIsSavingRoi] = useState(false);
   const [plateCheckLightWasOff, setPlateCheckLightWasOff] = useState(false);
+  const cameraWindowRef = React.useRef<Window | null>(null);
 
   const { data: status } = useQuery({
     queryKey: ['printerStatus', printer.id],
@@ -3799,17 +3800,21 @@ function PrinterCard({
                   if (cameraViewMode === 'embedded' && onOpenEmbeddedCamera) {
                     onOpenEmbeddedCamera(printer.id, printer.name);
                   } else {
-                    // Use saved window state or defaults
-                    const saved = localStorage.getItem('cameraWindowState');
-                    const state = saved ? JSON.parse(saved) : { width: 640, height: 400 };
-                    const features = [
-                      `width=${state.width}`,
-                      `height=${state.height}`,
-                      state.left !== undefined ? `left=${state.left}` : '',
-                      state.top !== undefined ? `top=${state.top}` : '',
-                      'menubar=no,toolbar=no,location=no,status=no,noopener',
-                    ].filter(Boolean).join(',');
-                    window.open(`/camera/${printer.id}`, `camera-${printer.id}`, features);
+                    if (cameraWindowRef.current && !cameraWindowRef.current.closed) {
+                      cameraWindowRef.current.focus();
+                    } else {
+                      // Use saved window state or defaults
+                      const saved = localStorage.getItem('cameraWindowState');
+                      const state = saved ? JSON.parse(saved) : { width: 640, height: 400 };
+                      const features = [
+                        `width=${state.width}`,
+                        `height=${state.height}`,
+                        state.left !== undefined ? `left=${state.left}` : '',
+                        state.top !== undefined ? `top=${state.top}` : '',
+                        'menubar=no,toolbar=no,location=no,status=no',
+                      ].filter(Boolean).join(',');
+                      cameraWindowRef.current = window.open(`/camera/${printer.id}`, `camera-${printer.id}`, features);
+                    }
                   }
                 }}
                 disabled={!status?.connected || !hasPermission('camera:view')}
