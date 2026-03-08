@@ -446,6 +446,25 @@ async def set_temperature(printer_id: int, body: SetTemperatureRequest):
     )
 
 
+class ChangeToolRequest(BaseModel):
+    tool_index: int = Field(..., ge=0, le=9)
+
+
+@router.post(
+    "/printers/{printer_id}/tool",
+    response_model=PrintControlResponse,
+    summary="Switch active tool/extruder",
+)
+async def change_tool(printer_id: int, body: ChangeToolRequest):
+    """Send T0/T1/T2... gcode to switch the active extruder."""
+    client = _get_klipper_printer(printer_id)
+    success = await client.change_tool(body.tool_index)
+    return PrintControlResponse(
+        success=success,
+        message=f"Switched to T{body.tool_index}" if success else "Tool change failed",
+    )
+
+
 @router.post(
     "/printers/{printer_id}/emergency-stop",
     response_model=PrintControlResponse,

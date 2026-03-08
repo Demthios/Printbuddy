@@ -74,6 +74,7 @@ class MoonrakerClient:
         self._connected = False
         self._should_run = False     # Set to False to stop the reconnect loop
 
+
     # -----------------------------------------------------------------------
     # Public API
     # -----------------------------------------------------------------------
@@ -173,7 +174,9 @@ class MoonrakerClient:
         Subscribe to printer object state updates.
 
         Moonraker will now push "notify_status_update" whenever any of
-        the requested objects change.
+        the requested objects change.  We request a 500 ms minimum interval
+        so temperature readings update twice per second instead of the default
+        ~1 second cadence.
 
         Args:
             objects: Dict mapping object names to None (subscribe all fields)

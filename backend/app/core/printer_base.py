@@ -50,6 +50,15 @@ class Temperature:
 
 
 @dataclass
+class ExtruderTemp:
+    """Temperature reading for a single extruder/tool in a multi-extruder setup."""
+    tool_name: str = ""        # "T0", "T1", "T2"
+    moonraker_name: str = ""   # "extruder", "extruder1", "extruder2"
+    actual: float = 0.0
+    target: float = 0.0
+
+
+@dataclass
 class PrintProgress:
     """Everything the UI needs to draw a progress bar and ETA."""
     filename: str = ""
@@ -74,6 +83,8 @@ class PrinterState:
     # Temperatures
     hotend: Temperature = field(default_factory=Temperature)
     bed: Temperature = field(default_factory=Temperature)
+    extruders: list = field(default_factory=list)   # list[ExtruderTemp]
+    active_extruder: str = ""                        # moonraker name e.g. "extruder1"
 
     # Print progress (only meaningful while status == PRINTING or PAUSED)
     progress: PrintProgress = field(default_factory=PrintProgress)

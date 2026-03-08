@@ -203,6 +203,8 @@ export interface PrinterStatus {
     chamber?: number;
     chamber_target?: number;
     chamber_heating?: boolean;  // Actual heater state from MQTT
+    extruders?: { tool: string; moonraker_name: string; actual: number; target: number }[];
+    active_extruder?: string;
   } | null;
   cover_url: string | null;
   hms_errors: HMSError[];
@@ -2324,6 +2326,11 @@ export const api = {
   klipperEmergencyStop: (printerId: number) =>
     request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/emergency-stop`, {
       method: 'POST',
+    }),
+  activateKlipperTool: (printerId: number, toolIndex: number) =>
+    request<{ success: boolean; message: string }>(`/klipper/printers/${printerId}/tool`, {
+      method: 'POST',
+      body: JSON.stringify({ tool_index: toolIndex }),
     }),
   listKlipperFiles: (printerId: number) =>
     request<{ filename: string; size: number; modified: number }[]>(`/klipper/printers/${printerId}/files`),

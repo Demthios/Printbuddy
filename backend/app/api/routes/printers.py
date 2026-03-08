@@ -364,6 +364,12 @@ async def get_printer_status(
                 "nozzle_target": state.hotend.target if state.hotend else 0,
                 "bed": state.bed.actual if state.bed else 0,
                 "bed_target": state.bed.target if state.bed else 0,
+                "extruders": [
+                    {"tool": e.tool_name, "moonraker_name": e.moonraker_name,
+                     "actual": e.actual, "target": e.target}
+                    for e in (state.extruders or [])
+                ],
+                "active_extruder": state.active_extruder or "extruder",
             },
         )
     

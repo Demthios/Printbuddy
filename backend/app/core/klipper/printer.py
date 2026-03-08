@@ -33,17 +33,10 @@ from backend.app.core.klipper.state import build_printer_state, merge_status
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Printer object subscriptions
-# ---------------------------------------------------------------------------
-
-# These are the Moonraker printer objects we want to subscribe to.
-# Moonraker will push updates whenever any of these change.
-# None means "subscribe to all fields of this object".
-SUBSCRIBED_OBJECTS = {
+# Base printer objects — extruders are added dynamically after discovery
+_BASE_SUBSCRIBED_OBJECTS = {
     "print_stats": None,        # filename, state, print_duration, total_duration
     "display_status": None,     # progress (0.0–1.0)
-    "extruder": None,           # temperature, target
     "heater_bed": None,         # temperature, target
     "fan": None,                # speed
     "toolhead": None,           # position, max_velocity
@@ -86,6 +79,9 @@ class KlipperPrinter(BasePrinter):
         self.port = port
         self.api_key = api_key
         self.camera_url = camera_url
+
+        # Discovered extruder object names (populated after connect)
+        self._extruder_names: list[str] = ["extruder"]
 
         # Last full status snapshot — we merge incremental updates into this
         # so build_printer_state() always gets a complete picture.
@@ -225,6 +221,18 @@ class KlipperPrinter(BasePrinter):
             self._log(f"Emergency stop failed: {exc}", "ERROR")
             return False
 
+    async def change_tool(self, tool_index: int) -> bool:
+        """Switch to a different tool/extruder via T0/T1/T2 gcode."""
+        try:
+            await self._client.send_request(
+                "printer.gcode.script",
+                params={"script": f"T{tool_index}"},
+            )
+            return True
+        except Exception as exc:
+            self._log(f"Tool change to T{tool_index} failed: {exc}", "ERROR")
+            return False
+
     async def firmware_restart(self) -> bool:
         """
         Restart the Klipper firmware (useful when Klippy is in error state).
@@ -280,75 +288,6 @@ class KlipperPrinter(BasePrinter):
 
     async def run_macro(self, macro_name: str) -> bool:
         """Run a gcode macro by name."""
-        # Sanitize: only allow alphanumeric + underscore
-        import re
-        if not re.match(r'^[A-Z0-9_]+$', macro_name.upper()):
-            self._log(f"Invalid macro name: {macro_name}", "ERROR")
-            return False
-        try:
-            await self._client.send_request(
-                "printer.gcode.script",
-                params={"script": macro_name.upper()},
-            )
-            return True
-        except Exception as exc:
-            self._log(f"run_macro {macro_name} failed: {exc}", "ERROR")
-            return False
-
-    async def list_macros(self) -> list[str]:
-        """Return user-defined gcode macros from Moonraker."""
-        try:
-            result = await self._client.send_request("printer.objects.list")
-            objects = result.get("objects", [])
-            macros = []
-            skip = {"PAUSE", "RESUME", "CANCEL_PRINT", "M104", "M109", "M140", "M190", "M117", "M600"}
-            for obj in objects:
-                if obj.startswith("gcode_macro "):
-                    name = obj[len("gcode_macro "):]
-                    if not name.startswith("_") and name not in skip:
-                        macros.append(name)
-            return sorted(macros)
-        except Exception as exc:
-            self._log(f"list_macros failed: {exc}", "ERROR")
-            return []
-
-    async def run_macro(self, macro_name: str) -> bool:
-        """Run a gcode macro by name."""
-        # Sanitize: only allow alphanumeric + underscore
-        import re
-        if not re.match(r'^[A-Z0-9_]+$', macro_name.upper()):
-            self._log(f"Invalid macro name: {macro_name}", "ERROR")
-            return False
-        try:
-            await self._client.send_request(
-                "printer.gcode.script",
-                params={"script": macro_name.upper()},
-            )
-            return True
-        except Exception as exc:
-            self._log(f"run_macro {macro_name} failed: {exc}", "ERROR")
-            return False
-
-    async def list_macros(self) -> list[str]:
-        """Return user-defined gcode macros from Moonraker."""
-        try:
-            result = await self._client.send_request("printer.objects.list")
-            objects = result.get("objects", [])
-            macros = []
-            skip = {"PAUSE", "RESUME", "CANCEL_PRINT", "M104", "M109", "M140", "M190", "M117", "M600"}
-            for obj in objects:
-                if obj.startswith("gcode_macro "):
-                    name = obj[len("gcode_macro "):]
-                    if not name.startswith("_") and name not in skip:
-                        macros.append(name)
-            return sorted(macros)
-        except Exception as exc:
-            self._log(f"list_macros failed: {exc}", "ERROR")
-            return []
-
-    async def run_macro(self, macro_name: str) -> bool:
-        """Run a gcode macro by name."""
-        # Sanitize: only allow alphanumeric + underscore
         import re
         if not re.match(r'^[A-Z0-9_]+$', macro_name.upper()):
             self._log(f"Invalid macro name: {macro_name}", "ERROR")
@@ -422,6 +361,7 @@ class KlipperPrinter(BasePrinter):
             status_data=self._status_snapshot,
             klippy_state="shutdown",
             camera_url=self.camera_url,
+            extruder_names=self._extruder_names,
         )
         self._emit(error_state)
 
@@ -462,6 +402,7 @@ class KlipperPrinter(BasePrinter):
             status_data=self._status_snapshot,
             klippy_state=self._klippy_state,
             camera_url=self.camera_url,
+            extruder_names=self._extruder_names,
         )
         self._emit(new_state)
 
@@ -485,7 +426,21 @@ class KlipperPrinter(BasePrinter):
             self._klippy_state = info.get("klippy_state", "ready")
             self._log(f"Klippy state: {self._klippy_state}")
 
-            # Step 2 & 3: subscribe and get initial snapshot
+            # Step 2: discover extruders dynamically
+            try:
+                obj_result = await self._client.send_request("printer.objects.list")
+                all_objects = obj_result.get("objects", [])
+                discovered = sorted(
+                    [o for o in all_objects if o == "extruder" or (o.startswith("extruder") and o[8:].isdigit())],
+                    key=lambda x: (0 if x == "extruder" else int(x[8:]) + 1),
+                )
+                self._extruder_names = discovered if discovered else ["extruder"]
+                self._log(f"Extruders discovered: {self._extruder_names}")
+            except Exception as exc:
+                self._log(f"Extruder discovery failed, using default: {exc}", "WARNING")
+                self._extruder_names = ["extruder"]
+
+            # Step 3 & 4: subscribe and get initial snapshot
             await self._subscribe_and_fetch()
 
         except Exception as exc:
@@ -497,8 +452,13 @@ class KlipperPrinter(BasePrinter):
         Called both on first connect and when Klippy becomes ready.
         """
         try:
+            # Build subscription dict with dynamically discovered extruders
+            objects_to_subscribe = {**_BASE_SUBSCRIBED_OBJECTS}
+            for name in self._extruder_names:
+                objects_to_subscribe[name] = None
+
             # Subscribe returns the current state of all objects
-            response = await self._client.subscribe_objects(SUBSCRIBED_OBJECTS)
+            response = await self._client.subscribe_objects(objects_to_subscribe)
 
             # response.status is the initial snapshot dict
             initial_status = response.get("status", {}) if isinstance(response, dict) else {}
@@ -511,6 +471,7 @@ class KlipperPrinter(BasePrinter):
                 status_data=self._status_snapshot,
                 klippy_state=self._klippy_state,
                 camera_url=self.camera_url,
+                extruder_names=self._extruder_names,
             )
             self._emit(initial_state)
             self._log(f"Initial state: {initial_state.status.value}")

@@ -1398,17 +1398,32 @@ function KlipperTempRow({ printerId, label, heater, actual, target, color }: { p
   const [editing, setEditing] = React.useState(false);
   const [inputVal, setInputVal] = React.useState(String(Math.round(target)));
   const [pending, setPending] = React.useState(false);
+  // Optimistic target: set immediately on submit, cleared once server catches up
+  const [optimisticTarget, setOptimisticTarget] = React.useState<number | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const isHeating = actual < target - 2 && target > 0;
+
+  // When the server value matches our optimistic target (within 1°), hand back to server
+  React.useEffect(() => {
+    if (optimisticTarget !== null && Math.abs(target - optimisticTarget) < 1) {
+      setOptimisticTarget(null);
+    }
+  }, [target, optimisticTarget]);
+
+  const displayTarget = optimisticTarget !== null ? optimisticTarget : target;
+  const isHeating = actual < displayTarget - 2 && displayTarget > 0;
+
   const submit = async () => {
     const temp = parseFloat(inputVal);
     if (isNaN(temp) || temp < 0 || temp > 350) { setEditing(false); return; }
+    setOptimisticTarget(temp);  // show new target value immediately
+    setEditing(false);
     setPending(true);
     try { await api.setKlipperTemperature(printerId, heater, temp); } catch {}
     setPending(false);
-    setEditing(false);
   };
+
   React.useEffect(() => { if (editing && inputRef.current) inputRef.current.focus(); }, [editing]);
+
   return (
     <div className="flex items-center gap-2 px-2 py-1.5 bg-bambu-dark rounded-lg">
       <HeaterThermometer className="w-3.5 h-3.5 flex-shrink-0" color={color} isHeating={isHeating} />
@@ -1426,10 +1441,10 @@ function KlipperTempRow({ printerId, label, heater, actual, target, color }: { p
           <span className="text-[9px] text-bambu-gray">°C</span>
         </div>
       ) : (
-        <button onClick={() => { setInputVal(String(Math.round(target))); setEditing(true); }}
-          className="text-[11px] text-bambu-gray hover:text-white transition-colors hover:underline underline-offset-2"
+        <button onClick={() => { setInputVal(String(Math.round(displayTarget))); setEditing(true); }}
+          className={`text-[11px] transition-colors hover:underline underline-offset-2 ${pending ? 'text-bambu-green/70' : 'text-bambu-gray hover:text-white'}`}
           title="Click to set target temperature">
-          {target > 0 ? Math.round(target) + "°C" : "Off"}
+          {displayTarget > 0 ? Math.round(displayTarget) + "°C" : "Off"}
         </button>
       )}
     </div>
@@ -1444,9 +1459,24 @@ function KlipperMacroPanel({ printerId }: { printerId: number }) {
     staleTime: 30000,
   });
   const [running, setRunning] = React.useState<string | null>(null);
+  const [open, setOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
   const runMacro = async (name: string) => {
+    setOpen(false);
     setRunning(name);
     try {
       const result = await api.runKlipperMacro(printerId, name);
@@ -1464,22 +1494,32 @@ function KlipperMacroPanel({ printerId }: { printerId: number }) {
   if (isLoading || !macros?.length) return null;
 
   return (
-    <div className="mt-3">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10px] uppercase tracking-wider text-bambu-gray font-medium">Macros</span>
-        <div className="flex-1 h-px bg-bambu-dark-tertiary/30" />
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {macros.map((name: string) => (
-          <button
-            key={name}
-            onClick={() => runMacro(name)}
-            disabled={running === name}
-            className="px-2.5 py-1 text-[11px] rounded bg-bambu-dark hover:bg-bambu-dark-tertiary text-bambu-gray hover:text-white transition-colors disabled:opacity-50"
-          >
-            {running === name ? '...' : name}
-          </button>
-        ))}
+    <div className="mt-3 flex items-center gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-bambu-gray font-medium flex-shrink-0">Macros</span>
+      <div className="flex-1 h-px bg-bambu-dark-tertiary/30" />
+      <div className="relative flex-shrink-0" ref={dropdownRef}>
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded bg-bambu-dark hover:bg-bambu-dark-tertiary text-bambu-gray hover:text-white transition-colors"
+        >
+          {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Terminal className="w-3 h-3" />}
+          {running ?? `${macros.length} macros`}
+          <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && (
+          <div className="absolute right-0 bottom-full mb-1 z-50 bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg shadow-xl py-1 min-w-[160px] max-h-60 overflow-y-auto">
+            {macros.map((name: string) => (
+              <button
+                key={name}
+                onClick={() => runMacro(name)}
+                disabled={running === name}
+                className="w-full text-left px-3 py-1.5 text-[11px] text-bambu-gray hover:text-white hover:bg-bambu-dark-tertiary transition-colors disabled:opacity-50"
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1597,7 +1637,7 @@ function PrinterCard({
   const { data: status } = useQuery({
     queryKey: ['printerStatus', printer.id],
     queryFn: () => api.getPrinterStatus(printer.id),
-    refetchInterval: 30000, // Fallback polling, WebSocket handles real-time
+    refetchInterval: printer.printer_type === 'klipper' ? 1000 : 30000,
   });
 
   // Check for firmware updates (cached for 5 minutes, can be disabled in settings)
@@ -2730,8 +2770,41 @@ function PrinterCard({
                   <div className="flex-1 h-px bg-bambu-dark-tertiary/30" />
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <KlipperTempRow printerId={printer.id} label="Nozzle" heater="extruder"
-                    actual={status.temperatures.nozzle || 0} target={status.temperatures.nozzle_target || 0} color="text-orange-400" />
+                  {/* Multi-extruder rows — one per discovered tool */}
+                  {((status.temperatures!.extruders?.length ?? 0) > 0
+                    ? status.temperatures!.extruders!
+                    : [{ tool: 'T0', moonraker_name: 'extruder',
+                         actual: status.temperatures!.nozzle || 0,
+                         target: status.temperatures!.nozzle_target || 0 }]
+                  ).map((ext: { tool: string; moonraker_name: string; actual: number; target: number }) => {
+                    const isActive = (status.temperatures!.active_extruder || 'extruder') === ext.moonraker_name;
+                    const toolIndex = ext.tool === 'T0' ? 0 : parseInt(ext.tool.slice(1));
+                    return (
+                      <div key={ext.moonraker_name} className={`flex items-center gap-1 rounded-lg border ${isActive ? 'border-bambu-green/50' : 'border-transparent'}`}>
+                        <KlipperTempRow
+                          printerId={printer.id}
+                          label={ext.tool}
+                          heater={ext.moonraker_name}
+                          actual={ext.actual}
+                          target={ext.target}
+                          color="text-orange-400"
+                        />
+                        <button
+                          onClick={() => api.activateKlipperTool(printer.id, toolIndex)}
+                          title={`Activate ${ext.tool}`}
+                          disabled={isActive}
+                          className={`px-1.5 py-1 text-[10px] rounded flex-shrink-0 transition-colors ${
+                            isActive
+                              ? 'text-bambu-green bg-bambu-green/10 cursor-default'
+                              : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-tertiary'
+                          }`}
+                        >
+                          {isActive ? '●' : '○'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {/* Bed always last */}
                   <KlipperTempRow printerId={printer.id} label="Bed" heater="heater_bed"
                     actual={status.temperatures.bed || 0} target={status.temperatures.bed_target || 0} color="text-blue-400" />
                 </div>

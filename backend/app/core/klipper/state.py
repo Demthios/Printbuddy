@@ -37,6 +37,7 @@ EXAMPLE raw Moonraker status dict:
 """
 
 from backend.app.core.printer_base import (
+    ExtruderTemp,
     PrintProgress,
     PrinterState,
     PrinterStatus,
@@ -99,6 +100,7 @@ def build_printer_state(
     status_data: dict,
     klippy_state: str = "ready",
     camera_url: str | None = None,
+    extruder_names: list | None = None,
 ) -> PrinterState:
     """
     Build a PrinterState from a raw Moonraker status dict.
@@ -136,17 +138,33 @@ def build_printer_state(
     status = map_print_stats_state(raw_state)
 
     # --- Temperatures --------------------------------------------------------
-    extruder_data = status_data.get("extruder", {})
-    bed_data = status_data.get("heater_bed", {})
+    resolved_extruder_names = extruder_names or ["extruder"]
+    extruders = []
+    for mn in resolved_extruder_names:
+        data = status_data.get(mn, {})
+        tool_name = "T0" if mn == "extruder" else f"T{mn[8:]}"
+        extruders.append(ExtruderTemp(
+            tool_name=tool_name,
+            moonraker_name=mn,
+            actual=round(float(data.get("temperature", 0.0)), 1),
+            target=round(float(data.get("target", 0.0)), 1),
+        ))
 
+    # hotend is T0 alias for backward compatibility
     hotend = Temperature(
-        actual=round(float(extruder_data.get("temperature", 0.0)), 1),
-        target=round(float(extruder_data.get("target", 0.0)), 1),
+        actual=extruders[0].actual if extruders else 0.0,
+        target=extruders[0].target if extruders else 0.0,
     )
+
+    bed_data = status_data.get("heater_bed", {})
     bed = Temperature(
         actual=round(float(bed_data.get("temperature", 0.0)), 1),
         target=round(float(bed_data.get("target", 0.0)), 1),
     )
+
+    # Active extruder from toolhead
+    toolhead_data = status_data.get("toolhead", {})
+    active_extruder = toolhead_data.get("extruder", "extruder")
 
     # --- Print progress ------------------------------------------------------
     # display_status.progress is a float 0.0–1.0
@@ -188,12 +206,11 @@ def build_printer_state(
         error_message = print_stats.get("message", "Unknown Klipper error")
 
     # --- Extra data (Klipper-specific, shown in detail panels) ---------------
-    toolhead = status_data.get("toolhead", {})
     extra = {
         "print_duration_seconds": int(print_duration),
-        "position": toolhead.get("position", []),  # [x, y, z, e]
-        "max_velocity": toolhead.get("max_velocity"),
-        "extruder_name": print_stats.get("extruder", "extruder"),
+        "position": toolhead_data.get("position", []),  # [x, y, z, e]
+        "max_velocity": toolhead_data.get("max_velocity"),
+        "extruder_name": active_extruder,
     }
 
     return PrinterState(
@@ -202,6 +219,8 @@ def build_printer_state(
         status=status,
         hotend=hotend,
         bed=bed,
+        extruders=extruders,
+        active_extruder=active_extruder,
         progress=progress,
         fan_speed=fan_speed,
         camera_url=camera_url,
